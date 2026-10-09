@@ -49,8 +49,8 @@ This project is developed and maintained by a dedicated team of B.Tech Computer 
 | :---------------------- | :----------------------------------- |
 | **Shubham Khilari**     | Developer / ML Engineer              |
 | **Racheal Kodiyan**     | Developer / Data Aquisition          |
-| **Shivangi Khandelwal** | Developer / UI/UX                    |
-| **Samiksha Khandagale** | Developer / Data Aqusition and UI/UX |
+| **Shivangi Khandelwal** | Developer / UI/UX and Data Acquisition|
+| **Samiksha Khandagale** | Developer / Documentation and UI/UX |
 
 ## 🚀 Getting Started
 
