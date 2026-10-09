@@ -1,0 +1,73 @@
+import React from 'react';
+import { Profile } from '../../types/profile';
+import { UploadedFile } from '../../types/document';
+import { UploadKey } from './StepDocuments';
+import { computeScore } from '../../utils/scoring';
+
+interface StepReviewProps {
+  draft: Profile;
+  files: Record<UploadKey, UploadedFile[]>;
+  onEdit: (step: number) => void;
+}
+
+export function StepReview({ draft, files, onEdit }: StepReviewProps) {
+  const sections = [
+  {
+    title: 'Academic',
+    step: 0,
+    rows: [
+    ['Institution', draft.undergrad],
+    ['Degree', draft.degree],
+    ['GPA', `${draft.gpa} / 10`],
+    ['Work experience', `${draft.workMonths} months`],
+    ['Internships', String(draft.internships)],
+    ['Publications', String(draft.publications)],
+    ['Target', `${draft.targetProgram}, ${draft.intake}`]]
+
+  },
+  {
+    title: 'Tests',
+    step: 1,
+    rows: [
+    ['GRE', `${draft.gre} / 340`],
+    ['TOEFL', `${draft.toefl} / 120`]]
+
+  },
+  {
+    title: 'Documents',
+    step: 2,
+    rows: [
+    ['Resume', files.resume[0]?.name ?? 'Not uploaded'],
+    ['SOP', files.sop[0]?.name ?? 'Not uploaded'],
+    ['LORs', files.lor.length ? `${files.lor.length} file${files.lor.length > 1 ? 's' : ''}` : 'Not uploaded']]
+
+  }];
+
+
+  return (
+    <div className="space-y-10">
+      {sections.map((s) =>
+      <section key={s.title}>
+          <div className="flex items-baseline justify-between border-b border-line pb-3">
+            <h3 className="font-display text-[18px] font-medium tracking-[-0.02em]">{s.title}</h3>
+            <button type="button" onClick={() => onEdit(s.step)} className="rounded-sm text-[13px] font-medium text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40">
+              Edit
+            </button>
+          </div>
+          <dl className="divide-y divide-line">
+            {s.rows.map(([k, v]) =>
+          <div key={k} className="grid grid-cols-[160px_1fr] gap-4 py-3">
+                <dt className="text-[14px] text-ink-3">{k}</dt>
+                <dd className={`truncate text-[14px] ${v === 'Not uploaded' ? 'text-ink-3' : 'text-ink'}`}>{v}</dd>
+              </div>
+          )}
+          </dl>
+        </section>
+      )}
+      <div className="flex items-baseline justify-between rounded-md border border-line bg-white px-5 py-4">
+        <p className="text-[14px] text-ink-2">Preliminary estimate before document analysis</p>
+        <p className="font-mono text-[24px] tabular-nums text-ink">{computeScore(draft)}</p>
+      </div>
+    </div>);
+
+}

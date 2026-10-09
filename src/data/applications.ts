@@ -1,0 +1,9 @@
+import { Application } from '../types/application';
+
+export const initialApplications: Application[] = [
+{ id: 'app-umass', universityId: 'umass', stage: 'preparing', deadline: '2026-12-15', docs: { sop: 'draft', lor1: 'final', lor2: 'draft', lor3: 'missing', transcript: 'final', resume: 'final' }, fee: 75, note: 'Tailor the SOP to the Database Systems group before finalizing.' },
+{ id: 'app-cmu', universityId: 'cmu', stage: 'shortlisted', deadline: '2026-12-10', docs: { sop: 'missing', lor1: 'draft', lor2: 'missing', lor3: 'missing', transcript: 'final', resume: 'draft' }, fee: 80, note: 'Reach. Only submit after the November GRE retake.' },
+{ id: 'app-usc', universityId: 'usc', stage: 'shortlisted', deadline: '2026-12-15', docs: { sop: 'missing', lor1: 'draft', lor2: 'missing', lor3: 'missing', transcript: 'final', resume: 'final' }, fee: 90, note: 'Coursework-heavy program. Emphasize industry work in the SOP.' },
+{ id: 'app-neu', universityId: 'northeastern', stage: 'preparing', deadline: '2027-01-15', docs: { sop: 'draft', lor1: 'final', lor2: 'final', lor3: 'missing', transcript: 'final', resume: 'final' }, fee: 100, note: 'Confirm co-op eligibility for the Data Science track.' },
+{ id: 'app-edi', universityId: 'edinburgh', stage: 'submitted', deadline: '2027-03-31', docs: { sop: 'final', lor1: 'final', lor2: 'final', lor3: 'final', transcript: 'final', resume: 'final' }, fee: 60, note: 'Submitted Sep 18. Decisions usually arrive in 6–8 weeks.' },
+{ id: 'app-tum', universityId: 'tum', stage: 'shortlisted', deadline: '2027-05-31', docs: { sop: 'missing', lor1: 'missing', lor2: 'missing', lor3: 'missing', transcript: 'final', resume: 'draft' }, fee: 0, note: 'Requires an APS certificate. Start that process in November.' }];
