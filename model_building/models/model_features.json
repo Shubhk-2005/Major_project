@@ -1,0 +1,38 @@
+{
+  "features": [
+    "gpa_imputed",
+    "gre_imputed",
+    "toefl_imputed",
+    "caci_index",
+    "work_experience_years",
+    "internship_experience_years",
+    "research_experience_years",
+    "research_publications",
+    "has_research",
+    "has_work_exp",
+    "has_internship",
+    "gre_missing",
+    "toefl_missing",
+    "qs_rank",
+    "qs_score",
+    "tier_num",
+    "uni_admit_rate",
+    "institutional_difficulty",
+    "gpa_gap",
+    "gre_gap",
+    "asymmetric_gpa_penalty",
+    "asymmetric_gre_penalty",
+    "research_prestige_synergy",
+    "industry_compensation_ratio",
+    "is_fall_intake"
+  ],
+  "metrics": {
+    "Model": "Stacking Ensemble (Meta-Learner)",
+    "ROC_AUC": 0.8465,
+    "Accuracy": 0.7626,
+    "Precision": 0.7674,
+    "Recall": 0.813,
+    "F1_Score": 0.7896,
+    "Brier_Score": 0.1593
+  }
+}

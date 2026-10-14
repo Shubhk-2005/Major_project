@@ -1,0 +1,32 @@
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Model files & weights (exclude large binaries from git tracking)
+models/*.joblib
+models/*.pkl
+models/*.bin
+!models/.gitkeep
+
+# Data (track folder structure, avoid committing huge raw datasets)
+# data/raw/*
+# !data/raw/.gitkeep
+# data/processed/*
+# !data/processed/.gitkeep
+
+# OS specific
+.DS_Store
+Thumbs.db
