@@ -19,7 +19,7 @@ export function Dropzone({ id, label, hint, files, onFiles, onRemove, multiple =
 
   const handle = (list: FileList | null) => {
     if (!list || list.length === 0) return;
-    const picked = Array.from(list).map((f) => ({ name: f.name, size: f.size }));
+    const picked = Array.from(list).map((f) => ({ name: f.name, size: f.size, rawFile: f }));
     onFiles(multiple ? picked : picked.slice(0, 1));
   };
 

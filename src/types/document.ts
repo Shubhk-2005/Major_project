@@ -13,6 +13,7 @@ export interface VaultDocument {
 export interface UploadedFile {
   name: string;
   size: number;
+  rawFile?: File;
 }
 
 export type SuggestionType = 'Specificity' | 'Clarity' | 'Program fit' | 'Structure';

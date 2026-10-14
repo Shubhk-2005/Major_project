@@ -1,0 +1,1 @@
+"""MsAdmit FastAPI Application Package."""
