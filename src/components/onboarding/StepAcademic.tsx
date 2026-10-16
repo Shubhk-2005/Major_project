@@ -15,34 +15,26 @@ export function StepAcademic({ form, errors, onChange }: StepProps) {
     <div className="space-y-10">
       <fieldset className="space-y-5">
         <legend className="font-display text-[18px] font-medium tracking-[-0.02em]">Undergraduate</legend>
-        <TextField id="undergrad" label="Institution" value={form.undergrad} onChange={(v) => onChange({ undergrad: v })} error={errors.undergrad} />
+        <TextField id="undergrad" label="Institution" value={form.undergrad} placeholder="e.g. University of Mumbai, IIT Delhi, BITS Pilani" onChange={(v) => onChange({ undergrad: v })} error={errors.undergrad} />
         <div className="grid gap-5 sm:grid-cols-2">
-          <TextField id="degree" label="Degree and major" value={form.degree} onChange={(v) => onChange({ degree: v })} error={errors.degree} />
+          <TextField id="degree" label="Degree and major" value={form.degree} placeholder="e.g. B.Tech Computer Science or B.E. Information Technology" onChange={(v) => onChange({ degree: v })} error={errors.degree} />
           <SelectField
             id="tier"
             label="Institution standing"
             value={form.institutionTier}
             onChange={(v) => onChange({ institutionTier: v })}
             options={[
-            { value: '1', label: 'Nationally top-tier (IIT, NIT top 10…)' },
-            { value: '2', label: 'Well-regarded' },
-            { value: '3', label: 'Other' }]
-            } />
+              { value: '1', label: 'Tier 1 — All 25 IITs & IISc' },
+              { value: '2', label: 'Tier 2 — All NITs & IIITs (also BITS)' },
+              { value: '3', label: 'Tier 3 — Other Colleges (Fr. CRIT, State, Autonomous, Affiliated...)' }
+            ]} />
           
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
-          <TextField id="gpa" label="Cumulative GPA" value={form.gpa} onChange={(v) => onChange({ gpa: v })} inputMode="decimal" suffix="/ 10" mono error={errors.gpa} hint="Convert from 4.0 by multiplying by 2.5." />
+          <TextField id="gpa" label="Cumulative GPA" value={form.gpa} placeholder="e.g. 8.4" onChange={(v) => onChange({ gpa: v })} inputMode="decimal" suffix="/ 10" mono error={errors.gpa} hint="Convert from 4.0 scale by multiplying by 2.5." />
         </div>
       </fieldset>
 
-      <fieldset className="space-y-5">
-        <legend className="font-display text-[18px] font-medium tracking-[-0.02em]">Experience</legend>
-        <div className="grid gap-5 sm:grid-cols-3">
-          <TextField id="work" label="Full-time work" value={form.workMonths} onChange={(v) => onChange({ workMonths: v })} inputMode="numeric" suffix="months" mono error={errors.workMonths} />
-          <TextField id="internships" label="Internships" value={form.internships} onChange={(v) => onChange({ internships: v })} inputMode="numeric" mono error={errors.internships} />
-          <TextField id="pubs" label="Publications" value={form.publications} onChange={(v) => onChange({ publications: v })} inputMode="numeric" mono error={errors.publications} />
-        </div>
-      </fieldset>
 
       <fieldset className="space-y-5">
         <legend className="font-display text-[18px] font-medium tracking-[-0.02em]">Target</legend>

@@ -8,7 +8,10 @@ import { useProfile } from '../contexts/ProfileContext';
 import { roadmapItems } from '../data/roadmap';
 import { applyLever, computeScore, countTiers, rankUniversities, tierRank } from '../utils/scoring';
 import { tierDefinition, tierLabel, tierOrder, tierSolid, tierText } from '../utils/tiers';
-import { Tier } from '../types/university';
+import { Tier, RankedUniversity } from '../types/university';
+
+import { RecommendationDrawer } from '../components/recommendations/RecommendationDrawer';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 
 const PORTFOLIO: Record<Tier, number> = { target: 3, consider: 4, reach: 2 };
 const INITIAL_VISIBLE = 5;
@@ -17,6 +20,7 @@ export function Recommendations() {
   const { profile, score, ranked } = useProfile();
   const counts = countTiers(ranked);
   const [expanded, setExpanded] = useState<Record<Tier, boolean>>({ target: false, consider: false, reach: false });
+  const [selectedUni, setSelectedUni] = useState<RankedUniversity | null>(null);
 
   const unlock = useMemo(() => {
     const high = roadmapItems.filter((r) => r.priority === 'high' && r.lever);
@@ -71,7 +75,7 @@ export function Recommendations() {
           <p className="mt-4 text-[14px] text-ink-2">Your tiers are already at their ceiling for these actions.</p>
           }
           <Link to="/app/roadmap" className="mt-5 inline-flex items-center gap-1.5 text-[14px] font-medium text-accent underline-offset-4 hover:underline">
-            Open roadmap
+            Open What If ??
             <ArrowRightIcon className="h-3.5 w-3.5" aria-hidden />
           </Link>
         </div>
@@ -79,7 +83,9 @@ export function Recommendations() {
 
       <div className="mt-12 grid gap-10 lg:grid-cols-3 lg:gap-6">
         {tierOrder.map((tier) => {
-          const items = ranked.filter((r) => r.fit.tier === tier);
+          const items = ranked
+            .filter((r) => r.fit.tier === tier)
+            .sort((a, b) => b.fit.fit - a.fit.fit);
           const visible = expanded[tier] ? items : items.slice(0, INITIAL_VISIBLE);
           return (
             <section key={tier} aria-labelledby={`tier-${tier}`}>
@@ -93,7 +99,7 @@ export function Recommendations() {
               <p className="mt-3 text-[13px] leading-snug text-ink-3">{tierDefinition[tier]}</p>
               <div className="mt-5 space-y-3">
                 {visible.map((r) =>
-                <RecommendationCard key={r.university.id} item={r} />
+                <RecommendationCard key={r.university.id} item={r} onOpenBreakdown={setSelectedUni} />
                 )}
                 {items.length === 0 && <p className="rounded-md border border-dashed border-line-strong px-4 py-8 text-center text-[14px] text-ink-3">No programs in this tier right now.</p>}
               </div>
@@ -110,6 +116,11 @@ export function Recommendations() {
 
         })}
       </div>
+
+      {/* University Full Breakdown Slide-Over Drawer */}
+      <ErrorBoundary fallbackTitle="Could not load university breakdown" onReset={() => setSelectedUni(null)}>
+        <RecommendationDrawer item={selectedUni} onClose={() => setSelectedUni(null)} />
+      </ErrorBoundary>
     </div>);
 
 }

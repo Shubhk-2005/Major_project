@@ -61,8 +61,8 @@ export function Tracker() {
           </>
         }
         actions={
-        <Button variant="secondary" to="/app/explorer">
-            Add program
+          <Button variant="secondary" to="/app/recommendations">
+            Add from recommendations
           </Button>
         } />
       

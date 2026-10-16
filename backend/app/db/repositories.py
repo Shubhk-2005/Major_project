@@ -68,19 +68,20 @@ class MongoProfileRepo:
         now = datetime.now(timezone.utc)
         doc = {
             "user_id": str(user_id),
-            "undergrad": "B.Tech Computer Science",
-            "degree": "Master of Science in Computer Science",
-            "institution_tier": 2,
-            "target_program": "MS in Computer Science",
-            "intake": "Fall 2026",
-            "gpa": 8.4,
-            "gre": 320.0,
-            "toefl": 108.0,
-            "publications": 1,
-            "work_months": 12,
-            "internships": 2,
-            "lor_strength": 4.0,
-            "sop_quality": 80.0,
+            "is_onboarded": False,
+            "undergrad": "",
+            "degree": "",
+            "institution_tier": 3,
+            "target_program": "MS Computer Science",
+            "intake": "Fall 2027",
+            "gpa": 0.0,
+            "gre": 0.0,
+            "toefl": 0.0,
+            "publications": 0,
+            "work_months": 0,
+            "internships": 0,
+            "lor_strength": 0.0,
+            "sop_quality": 0.0,
             "updated_at": now
         }
         res = coll.insert_one(doc)
@@ -93,7 +94,10 @@ class MongoProfileRepo:
         doc = coll.find_one({"user_id": str(user_id)})
         if not doc:
             return cls.create_default_profile(user_id)
-        return _serialize_mongo_doc(doc)
+        serialized = _serialize_mongo_doc(doc)
+        if serialized and "is_onboarded" not in serialized:
+            serialized["is_onboarded"] = bool(serialized.get("gpa", 0) > 0 and serialized.get("undergrad"))
+        return serialized
 
     @classmethod
     def update_profile(cls, user_id: str, patch_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -167,3 +171,13 @@ class MongoDocumentRepo:
             return cls.get_by_id(doc_id)
         except Exception:
             return None
+
+    @classmethod
+    def delete_document(cls, doc_id: Union[str, int], user_id: str) -> bool:
+        coll = cls.get_collection()
+        try:
+            oid = ObjectId(doc_id) if isinstance(doc_id, str) and len(doc_id) == 24 else doc_id
+            res = coll.delete_one({"_id": oid, "user_id": str(user_id)})
+            return res.deleted_count > 0
+        except Exception:
+            return False

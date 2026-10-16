@@ -92,7 +92,6 @@ predict_payload = {
     "work_months": updated_profile["work_months"],
     "publications": updated_profile["publications"],
     "internships": updated_profile["internships"],
-    "sop_quality": 88.0,  # From Gemini SOP rubric
     "institution_tier": updated_profile["institution_tier"]
 }
 

@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 
 
@@ -22,7 +22,7 @@ class CriteriaMap(BaseModel):
 
 class SopCritiqueRequest(BaseModel):
     sop_text: Optional[str] = None
-    document_id: Optional[int] = None
+    document_id: Optional[Union[str, int]] = None
     sop_id: Optional[str] = "SOP-1"
     university: Optional[str] = "Target University"
     program: Optional[str] = "Master of Science in Computer Science"

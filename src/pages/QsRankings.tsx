@@ -237,7 +237,7 @@ export function QsRankings({ standalone = false }: QsRankingsProps) {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <Button to="/app/explorer" variant="secondary" size="md">
+            <Button to="/app/recommendations" variant="secondary" size="md">
               <SparklesIcon className="h-4 w-4 text-accent" />
               Simulate Profile Fit
             </Button>
@@ -1057,8 +1057,8 @@ export function QsRankings({ standalone = false }: QsRankingsProps) {
               <Button to="/onboarding" size="md">
                 Calculate My Score
               </Button>
-              <Button to="/app/explorer" variant="secondary" size="md">
-                Open Explorer
+              <Button to="/app/recommendations" variant="secondary" size="md">
+                View Recommendations
               </Button>
             </div>
           </div>

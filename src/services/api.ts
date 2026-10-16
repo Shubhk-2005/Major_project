@@ -39,21 +39,22 @@ export const api = {
       if (!res.ok) return null;
       const data = await res.json();
       return {
-        name: data.full_name || "Applicant",
+        name: data.full_name || "",
         email: data.email || "",
-        undergrad: data.undergrad || "B.Tech Computer Science",
-        degree: data.degree || "Master of Science in Computer Science",
+        undergrad: data.undergrad || "",
+        degree: data.degree || "",
         institutionTier: (data.institution_tier as 1 | 2 | 3) || 2,
-        targetProgram: data.target_program || "MS in Computer Science",
-        intake: data.intake || "Fall 2026",
-        gpa: Number(data.gpa) || 8.4,
-        gre: Number(data.gre) || 320,
-        toefl: Number(data.toefl) || 108,
-        publications: Number(data.publications) || 1,
-        workMonths: Number(data.work_months) || 12,
-        internships: Number(data.internships) || 2,
-        lorStrength: Number(data.lor_strength) || 4.0,
-        sopQuality: Number(data.sop_quality) || 80.0
+        targetProgram: data.target_program || "MS Computer Science",
+        intake: data.intake || "Fall 2027",
+        gpa: data.gpa !== undefined && data.gpa !== null ? Number(data.gpa) : 0,
+        gre: data.gre !== undefined && data.gre !== null ? Number(data.gre) : 0,
+        toefl: data.toefl !== undefined && data.toefl !== null ? Number(data.toefl) : 0,
+        publications: data.publications !== undefined && data.publications !== null ? Number(data.publications) : 0,
+        workMonths: data.work_months !== undefined && data.work_months !== null ? Number(data.work_months) : 0,
+        internships: data.internships !== undefined && data.internships !== null ? Number(data.internships) : 0,
+        lorStrength: data.lor_strength !== undefined && data.lor_strength !== null ? Number(data.lor_strength) : 0.0,
+        sopQuality: data.sop_quality !== undefined && data.sop_quality !== null ? Number(data.sop_quality) : 0.0,
+        isOnboarded: Boolean(data.is_onboarded)
       };
     } catch (err) {
       console.error("Failed to fetch profile from backend:", err);
@@ -65,6 +66,8 @@ export const api = {
     try {
       const headers = await getAuthHeaders();
       const payload: Record<string, any> = {};
+      if (patch.isOnboarded !== undefined) payload.is_onboarded = patch.isOnboarded;
+      if ((patch as any).is_onboarded !== undefined) payload.is_onboarded = (patch as any).is_onboarded;
       if (patch.undergrad !== undefined) payload.undergrad = patch.undergrad;
       if (patch.degree !== undefined) payload.degree = patch.degree;
       if (patch.institutionTier !== undefined) payload.institution_tier = patch.institutionTier;
@@ -103,8 +106,7 @@ export const api = {
         internships: p.internships,
         publications: p.publications,
         institution_tier: p.institutionTier,
-        lor_strength: p.lorStrength,
-        sop_quality: p.sopQuality,
+        undergrad: p.undergrad,
         intake_term: p.intake.includes("Spring") ? "Spring" : "Fall"
       };
 
@@ -133,8 +135,7 @@ export const api = {
         internships: p.internships,
         publications: p.publications,
         institution_tier: p.institutionTier,
-        lor_strength: p.lorStrength,
-        sop_quality: p.sopQuality,
+        undergrad: p.undergrad,
         intake_term: p.intake.includes("Spring") ? "Spring" : "Fall"
       };
 
@@ -192,7 +193,10 @@ export const api = {
         sizeKb: d.size_kb,
         updated: d.updated_at ? d.updated_at.slice(0, 10) : "2026-10-14",
         linkedTo: [],
-        status: d.status === "analyzed" ? "final" : "needs review"
+        status: d.status === "analyzed" ? "final" : "needs review",
+        cloudinaryUrl: d.cloudinary_url,
+        extractedText: d.extracted_text || d.extracted_text_preview,
+        parsedData: d.parsed_data
       }));
     } catch (err) {
       console.warn("Could not fetch remote documents:", err);
@@ -200,7 +204,45 @@ export const api = {
     }
   },
 
-  // --- Gemini LLM 8-Criteria SOP Rubric Critique ---
+  async getDocument(docId: string): Promise<VaultDocument | null> {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/documents/${docId}`, { headers });
+      if (!res.ok) return null;
+      const d = await res.json();
+      return {
+        id: String(d.id),
+        name: d.filename,
+        kind: d.file_type as any,
+        sizeKb: d.size_kb,
+        updated: d.updated_at ? d.updated_at.slice(0, 10) : "2026-10-14",
+        linkedTo: [],
+        status: d.status === "analyzed" ? "final" : "needs review",
+        cloudinaryUrl: d.cloudinary_url,
+        extractedText: d.extracted_text,
+        parsedData: d.parsed_data
+      };
+    } catch (err) {
+      console.error("Failed to fetch document:", err);
+      return null;
+    }
+  },
+
+  async deleteDocument(docId: string): Promise<boolean> {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/documents/${docId}`, {
+        method: "DELETE",
+        headers
+      });
+      return res.ok;
+    } catch (err) {
+      console.error("Failed to delete document:", err);
+      return false;
+    }
+  },
+
+  // --- Ms AI 8-Criteria SOP Rubric Critique ---
   async critiqueSop(params: {
     sopText?: string;
     documentId?: string | number;
@@ -226,5 +268,42 @@ export const api = {
       throw new Error(err.detail || "SOP evaluation failed");
     }
     return await res.json();
+  },
+
+  // --- Ms AI Dynamic Roadmap Strategy ---
+  async generateRoadmap(params?: {
+    gpa?: number;
+    gre?: number;
+    toefl?: number;
+    publications?: number;
+    workMonths?: number;
+    targetUniversities?: string[];
+  }): Promise<any> {
+    const headers = await getAuthHeaders();
+    const payload = {
+      gpa: params?.gpa ?? 8.4,
+      gre: params?.gre ?? 320,
+      toefl: params?.toefl ?? 108,
+      publications: params?.publications ?? 1,
+      work_months: params?.workMonths ?? 12,
+      target_universities: params?.targetUniversities ?? [
+        "Carnegie Mellon University",
+        "University of Southern California",
+        "University of Massachusetts Amherst"
+      ]
+    };
+
+    const res = await fetch(`${API_BASE_URL}/llm/generate-roadmap`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Roadmap generation failed");
+    }
+    return await res.json();
   }
 };
+

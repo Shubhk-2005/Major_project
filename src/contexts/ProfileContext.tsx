@@ -11,6 +11,7 @@ interface ProfileContextValue {
   profile: Profile;
   setProfile: (p: Profile) => void;
   updateProfile: (patch: Partial<Profile>) => void;
+  refreshProfile: () => Promise<void>;
   score: number;
   factors: ShapFactor[];
   ranked: RankedUniversity[];
@@ -18,6 +19,7 @@ interface ProfileContextValue {
   setSopDecisions: (d: Record<string, SopDecision>) => void;
   currentUser: FirebaseUser | null;
   loading: boolean;
+  isOnboarded: boolean;
   logout: () => Promise<void>;
 }
 
@@ -34,6 +36,37 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const [liveFactors, setLiveFactors] = useState<ShapFactor[] | null>(null);
   const [liveRanked, setLiveRanked] = useState<RankedUniversity[] | null>(null);
 
+  const isOnboarded = Boolean(
+    profile.isOnboarded &&
+    profile.gpa > 0 &&
+    profile.undergrad &&
+    profile.undergrad.trim() !== ''
+  );
+
+  const refreshProfile = useCallback(async () => {
+    const remote = await api.getProfile();
+    if (remote) {
+      const onboarded = Boolean(
+        (remote.isOnboarded || (remote as any).is_onboarded) &&
+        remote.gpa > 0 &&
+        remote.undergrad &&
+        remote.undergrad.trim() !== ''
+      );
+      if (onboarded) {
+        localStorage.setItem('msadmit_onboarded', 'true');
+      } else {
+        localStorage.removeItem('msadmit_onboarded');
+      }
+      setProfile((prev) => ({
+        ...prev,
+        ...remote,
+        name: currentUser?.displayName || remote.name || prev.name,
+        email: currentUser?.email || remote.email || prev.email,
+        isOnboarded: onboarded
+      }));
+    }
+  }, [currentUser]);
+
   // Listen for Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -42,11 +75,31 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         // Fetch saved profile from MongoDB Atlas via FastAPI backend
         const remote = await api.getProfile();
         if (remote) {
+          const onboarded = Boolean(
+            (remote.isOnboarded || (remote as any).is_onboarded) &&
+            remote.gpa > 0 &&
+            remote.undergrad &&
+            remote.undergrad.trim() !== ''
+          );
+          if (onboarded) {
+            localStorage.setItem('msadmit_onboarded', 'true');
+          } else {
+            localStorage.removeItem('msadmit_onboarded');
+          }
           setProfile((prev) => ({
             ...prev,
             ...remote,
             name: user.displayName || remote.name || prev.name,
-            email: user.email || remote.email || prev.email
+            email: user.email || remote.email || prev.email,
+            isOnboarded: onboarded
+          }));
+        } else {
+          localStorage.removeItem('msadmit_onboarded');
+          setProfile((prev) => ({
+            ...prev,
+            name: user.displayName || prev.name,
+            email: user.email || prev.email,
+            isOnboarded: false
           }));
         }
       }
@@ -61,6 +114,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     let isCancelled = false;
 
     async function syncBackendML() {
+      // Only predict when profile is onboarded or has real academic data
+      if (profile.gpa <= 0 && !profile.undergrad) return;
+
       // 1. Predict competitiveness & SHAP factors
       const pred = await api.predictCompetitiveness(profile);
       if (!isCancelled && pred) {
@@ -95,7 +151,13 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await logoutUser();
+    localStorage.removeItem("msadmit_token");
+    localStorage.removeItem("msadmit_onboarded");
     setCurrentUser(null);
+    setProfile(initialProfile);
+    setLiveScore(null);
+    setLiveFactors(null);
+    setLiveRanked(null);
   }, []);
 
   const value = useMemo<ProfileContextValue>(
@@ -103,17 +165,19 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       profile,
       setProfile,
       updateProfile,
+      refreshProfile,
       // Fallback to local heuristic if backend is initializing
-      score: liveScore ?? computeScore(profile),
-      factors: liveFactors ?? computeShap(profile),
-      ranked: liveRanked ?? rankUniversities(profile),
+      score: isOnboarded ? (liveScore ?? computeScore(profile)) : 0,
+      factors: isOnboarded ? (liveFactors ?? computeShap(profile)) : [],
+      ranked: isOnboarded ? (liveRanked ?? rankUniversities(profile)) : [],
       sopDecisions,
       setSopDecisions,
       currentUser,
       loading,
+      isOnboarded,
       logout
     }),
-    [profile, updateProfile, sopDecisions, currentUser, loading, logout, liveScore, liveFactors, liveRanked]
+    [profile, updateProfile, refreshProfile, sopDecisions, currentUser, loading, isOnboarded, logout, liveScore, liveFactors, liveRanked]
   );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

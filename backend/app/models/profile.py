@@ -12,7 +12,7 @@ class UserProfile(Base):
 
     undergrad = Column(String(255), default="B.Tech Computer Science")
     degree = Column(String(255), default="Master of Science in Computer Science")
-    institution_tier = Column(Integer, default=2)
+    institution_tier = Column(Integer, default=3)
     target_program = Column(String(255), default="MS in Computer Science")
     intake = Column(String(100), default="Fall 2026")
     
@@ -23,8 +23,8 @@ class UserProfile(Base):
     publications = Column(Integer, default=1)
     work_months = Column(Integer, default=12)
     internships = Column(Integer, default=2)
-    lor_strength = Column(Float, default=4.0)
-    sop_quality = Column(Float, default=80.0)
+    lor_strength = Column(Float, default=0.0)
+    sop_quality = Column(Float, default=0.0)
 
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

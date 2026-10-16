@@ -12,21 +12,26 @@ function researchContribution(pubs: number): number {
 }
 
 export function computeShap(p: Profile): ShapFactor[] {
-  const gpa = clamp((p.gpa - 8) * 12, -12, 12);
-  const gre = clamp((p.gre - 315) * 0.9, -12, 12);
-  const toefl = clamp((p.toefl - 100) * 0.3, -5, 4);
-  const research = researchContribution(p.publications);
-  const work = Math.min(p.workMonths, 36) / 36 * 8 - 3;
-  const internships = clamp(p.internships * 1.5 - 1.5, -1.5, 4.5);
-  const lor = (p.lorStrength - 3) * 3;
-  const sop = (p.sopQuality - 70) * 0.25;
-  const institution = p.institutionTier === 1 ? 4 : p.institutionTier === 2 ? 1 : -2;
+  const gpaVal = p.gpa ?? 0;
+  const greVal = p.gre ?? 0;
+  const toeflVal = p.toefl ?? 0;
+  const pubsVal = p.publications ?? 0;
+  const workVal = p.workMonths ?? 0;
+  const internsVal = p.internships ?? 0;
+
+  const gpa = clamp((gpaVal - 8) * 12, -12, 12);
+  const gre = greVal > 0 ? clamp((greVal - 315) * 0.9, -12, 12) : 0;
+  const toefl = toeflVal > 0 ? clamp((toeflVal - 100) * 0.3, -5, 4) : 0;
+  const research = researchContribution(pubsVal);
+  const work = Math.min(workVal, 36) / 36 * 8 - 3;
+  const internships = clamp(internsVal * 1.5 - 1.5, -1.5, 4.5);
+  const institution = p.institutionTier === 1 ? 4 : p.institutionTier === 2 ? 1 : -3;
 
   const factors: ShapFactor[] = [
   {
     key: 'gpa',
     label: 'Undergraduate GPA',
-    value: `${p.gpa.toFixed(1)} / 10`,
+    value: `${gpaVal.toFixed(1)} / 10`,
     contribution: gpa,
     explanation:
     gpa >= 0 ?
@@ -36,7 +41,7 @@ export function computeShap(p: Profile): ShapFactor[] {
   {
     key: 'gre',
     label: 'GRE',
-    value: `${p.gre}`,
+    value: greVal > 0 ? `${greVal}` : 'Not taken',
     contribution: gre,
     explanation:
     gre >= 0 ?
@@ -46,27 +51,17 @@ export function computeShap(p: Profile): ShapFactor[] {
   {
     key: 'research',
     label: 'Research & publications',
-    value: `${p.publications} paper${p.publications === 1 ? '' : 's'}`,
+    value: `${pubsVal} paper${pubsVal === 1 ? '' : 's'}`,
     contribution: research,
     explanation:
-    p.publications === 0 ?
+    pubsVal === 0 ?
     'No publications yet. Research-weighted programs discount otherwise strong profiles.' :
-    `${p.publications} publication${p.publications > 1 ? 's' : ''}, a strong signal for thesis-track programs.`
-  },
-  {
-    key: 'sop',
-    label: 'Statement of purpose',
-    value: `${Math.round(p.sopQuality)} / 100`,
-    contribution: sop,
-    explanation:
-    p.sopQuality >= 70 ?
-    'Specific, evidence-backed and aligned to named programs.' :
-    'Generic motivation and thin program fit are holding the draft back.'
+    `${pubsVal} publication${pubsVal > 1 ? 's' : ''}, a strong signal for thesis-track programs.`
   },
   {
     key: 'toefl',
     label: 'TOEFL',
-    value: `${p.toefl}`,
+    value: toeflVal > 0 ? `${toeflVal}` : 'Not taken',
     contribution: toefl,
     explanation:
     toefl >= 0 ?
@@ -76,48 +71,35 @@ export function computeShap(p: Profile): ShapFactor[] {
   {
     key: 'work',
     label: 'Work experience',
-    value: `${p.workMonths} mo`,
+    value: `${workVal} mo`,
     contribution: work,
     explanation:
     work >= 0 ?
-    `${p.workMonths} months of full-time work adds industry credibility.` :
+    `${workVal} months of full-time work adds industry credibility.` :
     'Under a year of full-time work, so industry depth is not yet a strength.'
   },
   {
     key: 'internships',
     label: 'Internships',
-    value: `${p.internships}`,
+    value: `${internsVal}`,
     contribution: internships,
     explanation:
-    p.internships >= 2 ?
+    internsVal >= 2 ?
     'Multiple internships show sustained applied experience.' :
     'One or fewer internships. Neutral to slightly negative for applied programs.'
   },
   {
     key: 'institution',
     label: 'Undergraduate institution',
-    value: p.undergrad,
+    value: p.undergrad || (p.institutionTier === 1 ? 'Tier 1 (IIT)' : p.institutionTier === 2 ? 'Tier 2 (NIT/IIIT)' : 'Tier 3 (Other)'),
     contribution: institution,
     explanation:
     p.institutionTier === 1 ?
-    'Top-tier institution that committees recognize immediately.' :
+    `Tier 1 Institution (${p.undergrad || 'IIT / IISc'}): Globally recognized top-tier engineering institution, providing significant pedigree advantage with admissions committees.` :
     p.institutionTier === 2 ?
-    'Well-regarded institution. A mild positive.' :
-    'Less-known institution, so scores and projects must carry more weight.'
-  },
-  {
-    key: 'lor',
-    label: 'Letters of recommendation',
-    value: `${p.lorStrength} / 5`,
-    contribution: lor,
-    explanation:
-    p.lorStrength >= 4 ?
-    'Specific letters from supervisors who know your work closely.' :
-    p.lorStrength === 3 ?
-    'Solid but generic letters. They neither add nor subtract.' :
-    'Letters read as generic and are costing you points.'
+    `Tier 2 Institution (${p.undergrad || 'NIT / IIIT / BITS'}): Nationally recognized premier institute with established reputation and strong technical rigor.` :
+    `Tier 3 Institution (${p.undergrad || 'State / Affiliated College'}): Admissions committees scrutinize project depth, GPA, and test scores more heavily outside Tier 1/2.`
   }];
-
 
   return factors.
   map((f) => ({ ...f, contribution: round1(f.contribution) })).
@@ -125,6 +107,7 @@ export function computeShap(p: Profile): ShapFactor[] {
 }
 
 export function computeScore(p: Profile): number {
+  if (!p || (p.gpa ?? 0) <= 0 || !p.undergrad) return 0;
   const sum = computeShap(p).reduce((acc, f) => acc + f.contribution, 0);
   return clamp(Math.round(BASELINE + sum), 1, 99);
 }
@@ -146,7 +129,9 @@ export function computeFit(p: Profile, score: number, u: University): FitResult 
   if (u.researchWeight === 'high') research = p.publications > 0 ? 4 : -4;
   if (u.researchWeight === 'medium') research = p.publications > 0 ? 2 : -1;
 
-  const fit = clamp(Math.round(50 + base + greImpact + gpaImpact + research), 3, 97);
+  const ugTierImpact = p.institutionTier === 1 ? 3 : p.institutionTier === 2 ? 0.5 : -2.5;
+
+  const fit = clamp(Math.round(50 + base + greImpact + gpaImpact + research + ugTierImpact), 3, 97);
 
   const reasons: FitReason[] = [
   {
@@ -175,6 +160,17 @@ export function computeFit(p: Profile, score: number, u: University): FitResult 
     gpaGap >= 0 ?
     `GPA ${p.gpa.toFixed(1)} is at or above the admitted median of ${u.avgGpa.toFixed(1)}.` :
     `GPA ${p.gpa.toFixed(1)} trails the admitted median of ${u.avgGpa.toFixed(1)}.`
+  },
+  {
+    key: 'institution',
+    label: 'Undergraduate institution',
+    impact: round1(ugTierImpact),
+    text:
+      p.institutionTier === 1 ?
+      `Tier 1 Institution (${p.undergrad || 'IIT / IISc'}): Globally recognized pedigree provides an admissions advantage.` :
+      p.institutionTier === 2 ?
+      `Tier 2 Institution (${p.undergrad || 'NIT / IIIT / BITS'}): Recognized national technical institute with solid standing.` :
+      `Tier 3 Institution (${p.undergrad || 'State / Affiliated College'}): Greater reliance on GPA, GRE, and projects to validate rigor.`
   }];
 
 
@@ -200,9 +196,40 @@ export function computeFit(p: Profile, score: number, u: University): FitResult 
 
 export function rankUniversities(p: Profile, list: University[] = universities): RankedUniversity[] {
   const score = computeScore(p);
-  return list.
+  const evaluated = list.
   map((u) => ({ university: u, fit: computeFit(p, score, u) })).
   sort((a, b) => b.fit.fit - a.fit.fit);
+
+  const targets = evaluated.filter((r) => r.fit.tier === 'target');
+  const considers = evaluated.filter((r) => r.fit.tier === 'consider');
+
+  // Dynamic portfolio balancing: If rigid thresholds leave target or consider empty (e.g. lower/higher score),
+  // guarantee that the user always gets Target (best matches), Consider (attainable), and Reach (dream).
+  if (targets.length < 3 || considers.length < 3) {
+    const total = evaluated.length;
+    const targetCount = Math.max(3, Math.floor(total * 0.35));
+    const considerCount = Math.max(3, Math.floor(total * 0.35));
+
+    return evaluated.map((item, idx) => {
+      let tier: Tier = 'reach';
+      if (idx < targetCount) {
+        tier = 'target';
+      } else if (idx < targetCount + considerCount) {
+        tier = 'consider';
+      } else {
+        tier = 'reach';
+      }
+      return {
+        ...item,
+        fit: {
+          ...item.fit,
+          tier
+        }
+      };
+    });
+  }
+
+  return evaluated;
 }
 
 export function countTiers(ranked: RankedUniversity[]): Record<Tier, number> {

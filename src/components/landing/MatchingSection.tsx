@@ -1,12 +1,12 @@
 import React from 'react';
 import { Reveal } from './Reveal';
 import { FitReasons } from '../ui/FitReasons';
-import { initialProfile } from '../../data/profile';
+import { sampleProfile } from '../../data/profile';
 import { rankUniversities } from '../../utils/scoring';
 import { tierDefinition, tierLabel, tierOrder, tierSolid, tierText } from '../../utils/tiers';
 
 export function MatchingSection() {
-  const ranked = rankUniversities(initialProfile);
+  const ranked = rankUniversities(sampleProfile);
 
   return (
     <section id="matching" className="scroll-mt-16 border-t border-line">

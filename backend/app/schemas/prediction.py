@@ -4,14 +4,13 @@ from pydantic import BaseModel, Field
 
 class PredictRequest(BaseModel):
     gpa: float = Field(..., ge=0.0, le=10.0, description="Undergraduate GPA on 10.0 or 4.0 scale")
-    gre: Optional[float] = Field(default=315.0, ge=260.0, le=340.0)
+    gre: Optional[float] = Field(default=315.0, ge=0.0, le=340.0)
     toefl: Optional[float] = Field(default=104.0, ge=0.0, le=120.0)
     work_months: int = Field(default=0, ge=0)
     internships: int = Field(default=0, ge=0)
     publications: int = Field(default=0, ge=0)
-    institution_tier: int = Field(default=2, ge=1, le=3)
-    lor_strength: float = Field(default=3.5, ge=1.0, le=5.0)
-    sop_quality: float = Field(default=75.0, ge=0.0, le=100.0)
+    institution_tier: int = Field(default=3, ge=1, le=3)
+    undergrad: Optional[str] = Field(default=None, description="Undergraduate institution name")
     intake_term: str = Field(default="Fall", description="Fall or Spring")
 
 

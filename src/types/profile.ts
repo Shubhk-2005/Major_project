@@ -16,6 +16,7 @@ export interface Profile {
   internships: number;
   lorStrength: number;
   sopQuality: number;
+  isOnboarded?: boolean;
 }
 
 export interface ProfileForm {

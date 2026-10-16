@@ -21,15 +21,17 @@ const intros = [
 { title: 'Review and submit', body: 'Check everything once. You can edit your profile anytime.' }];
 
 
+import { api } from '../services/api';
+
 export function Onboarding() {
   const navigate = useNavigate();
   const reduce = useReducedMotion();
-  const { profile, setProfile } = useProfile();
+  const { profile, updateProfile, refreshProfile, setProfile } = useProfile();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<ProfileForm>(() => toForm(profile));
   const [errors, setErrors] = useState<FormErrors>({});
   const [files, setFiles] = useState<Record<UploadKey, UploadedFile[]>>({
-    resume: [{ name: 'Resume_Sep2026.pdf', size: 190464 }],
+    resume: [],
     sop: [],
     lor: []
   });
@@ -46,7 +48,7 @@ export function Onboarding() {
     });
   };
 
-  const next = () => {
+  const next = async () => {
     const errs = validateStep(step, form);
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
@@ -55,20 +57,62 @@ export function Onboarding() {
       window.scrollTo(0, 0);
       return;
     }
+
     setAnalyzing(true);
-    window.setTimeout(() => {
-      setProfile(draft);
+    try {
+      // 1. Upload any files attached during onboarding concurrently
+      const uploadPromises: Promise<any>[] = [];
+      for (const [kindKey, fileList] of Object.entries(files)) {
+        for (const f of fileList) {
+          if (f.rawFile) {
+            const typeStr = kindKey === 'resume' ? 'Resume' : kindKey === 'sop' ? 'SOP' : 'LOR';
+            uploadPromises.push(api.uploadDocument(f.rawFile, typeStr).catch((e) => {
+              console.warn('Onboarding doc upload error:', e);
+              return null;
+            }));
+          }
+        }
+      }
+      const uploadedDocs = await Promise.all(uploadPromises);
+
+      // Find parsed resume data if candidate uploaded a resume
+      const resumeDoc = uploadedDocs.find(
+        (d) => d && (d.file_type === 'Resume' || (d.filename && d.filename.toLowerCase().includes('resume')))
+      );
+      const parsedResume = resumeDoc?.parsed_data;
+
+      // 2. Merge verified resume metrics with form draft so resume values are not lost
+      const finalProfileData = {
+        ...draft,
+        ...(parsedResume ? {
+          workMonths: parsedResume.work_months !== undefined ? Number(parsedResume.work_months) : (parsedResume.work_experience_years ? Math.round(Number(parsedResume.work_experience_years) * 12) : draft.workMonths),
+          internships: parsedResume.internships_count !== undefined ? Number(parsedResume.internships_count) : draft.internships,
+          publications: parsedResume.research_publications !== undefined ? Number(parsedResume.research_publications) : draft.publications,
+          gpa: parsedResume.gpa && Number(parsedResume.gpa) > 0 ? Number(parsedResume.gpa) : draft.gpa,
+          undergrad: parsedResume.undergrad || draft.undergrad,
+          degree: parsedResume.degree || draft.degree,
+          institutionTier: parsedResume.institution_tier ?? draft.institutionTier
+        } : {}),
+        isOnboarded: true,
+        is_onboarded: true
+      };
+
+      // 3. Persist profile metrics to state & MongoDB Atlas
+      updateProfile(finalProfileData);
+      localStorage.setItem('msadmit_onboarded', 'true');
+      await api.updateProfile(finalProfileData as any);
+      await refreshProfile();
+    } catch (err) {
+      console.error('Error during onboarding submission:', err);
+    } finally {
       navigate('/app');
-    }, 1400);
+    }
   };
 
   return (
     <div className="min-h-screen w-full bg-canvas text-ink">
       <header className="flex items-center justify-between px-6 py-6 md:px-10">
         <Logo />
-        <Button variant="ghost" size="sm" to="/app">
-          Save and exit
-        </Button>
       </header>
 
       <main className="mx-auto max-w-[680px] px-6 pb-24 pt-8">

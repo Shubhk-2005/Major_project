@@ -68,6 +68,22 @@ def critique_statement_of_purpose(
             target_doc.status = "analyzed"
             db.commit()
 
+    # Automatically synchronize user profile's sop_quality
+    overall_sop = critique.get("weighted_score_100") if critique.get("weighted_score_100") is not None else critique.get("overall_score")
+    if current_user and overall_sop is not None:
+        try:
+            sop_float = float(overall_sop)
+            if settings.DB_ENGINE == "mongodb":
+                MongoProfileRepo.update_profile(str(current_user.id), {"sop_quality": sop_float})
+            else:
+                from app.models.profile import UserProfile
+                prof = db.query(UserProfile).filter(UserProfile.user_id == int(current_user.id)).first()
+                if prof:
+                    prof.sop_quality = sop_float
+                    db.commit()
+        except Exception:
+            pass
+
     return critique
 
 

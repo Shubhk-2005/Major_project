@@ -2,17 +2,17 @@ import { InstitutionTier, Profile, ProfileForm } from '../types/profile';
 
 export function toForm(p: Profile): ProfileForm {
   return {
-    undergrad: p.undergrad,
-    degree: p.degree,
-    institutionTier: String(p.institutionTier),
-    targetProgram: p.targetProgram,
-    intake: p.intake,
-    gpa: String(p.gpa),
-    gre: String(p.gre),
-    toefl: String(p.toefl),
-    publications: String(p.publications),
-    workMonths: String(p.workMonths),
-    internships: String(p.internships)
+    undergrad: p.undergrad || '',
+    degree: p.degree || '',
+    institutionTier: String(p.institutionTier || 3),
+    targetProgram: p.targetProgram || 'MS Computer Science',
+    intake: p.intake || 'Fall 2027',
+    gpa: p.gpa > 0 ? String(p.gpa) : '',
+    gre: p.gre > 0 ? String(p.gre) : '',
+    toefl: p.toefl > 0 ? String(p.toefl) : '',
+    publications: p.publications > 0 ? String(p.publications) : '',
+    workMonths: p.workMonths > 0 ? String(p.workMonths) : '',
+    internships: p.internships > 0 ? String(p.internships) : ''
   };
 }
 
@@ -25,12 +25,12 @@ export function fromForm(f: ProfileForm, base: Profile): Profile {
     ...base,
     undergrad: f.undergrad.trim(),
     degree: f.degree.trim(),
-    institutionTier: Number(f.institutionTier) as InstitutionTier,
+    institutionTier: (Number(f.institutionTier) || 3) as InstitutionTier,
     targetProgram: f.targetProgram,
     intake: f.intake,
-    gpa: num(f.gpa, base.gpa),
-    gre: num(f.gre, base.gre),
-    toefl: num(f.toefl, base.toefl),
+    gpa: num(f.gpa, 0),
+    gre: num(f.gre, 0),
+    toefl: num(f.toefl, 0),
     publications: num(f.publications, 0),
     workMonths: num(f.workMonths, 0),
     internships: num(f.internships, 0)
@@ -48,14 +48,11 @@ export function validateStep(step: number, f: ProfileForm): FormErrors {
   if (step === 0) {
     if (!f.undergrad.trim()) errors.undergrad = 'Enter your undergraduate institution.';
     if (!f.degree.trim()) errors.degree = 'Enter your degree and major.';
-    if (!inRange(f.gpa, 0, 10)) errors.gpa = 'GPA must be between 0 and 10.';
-    if (!inRange(f.workMonths, 0, 240)) errors.workMonths = 'Enter months of full-time work (0 if none).';
-    if (!inRange(f.internships, 0, 20)) errors.internships = 'Enter a number, 0 if none.';
-    if (!inRange(f.publications, 0, 20)) errors.publications = 'Enter a number, 0 if none.';
+    if (!f.gpa.trim() || !inRange(f.gpa, 1, 10)) errors.gpa = 'Enter your GPA (between 1.0 and 10.0).';
   }
   if (step === 1) {
-    if (!inRange(f.gre, 260, 340)) errors.gre = 'GRE total must be between 260 and 340.';
-    if (!inRange(f.toefl, 0, 120)) errors.toefl = 'TOEFL must be between 0 and 120.';
+    if (!f.gre.trim() || !inRange(f.gre, 260, 340)) errors.gre = 'GRE total must be between 260 and 340.';
+    if (!f.toefl.trim() || !inRange(f.toefl, 0, 120)) errors.toefl = 'TOEFL must be between 0 and 120.';
   }
   return errors;
 }

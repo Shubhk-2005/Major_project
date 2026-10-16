@@ -40,8 +40,21 @@ export function Auth({ mode }: AuthProps) {
         email: user.email || ''
       });
       // Sync with MongoDB backend
-      await api.getProfile();
-      navigate('/app');
+      const remote = await api.getProfile();
+      const hasCompletedOnboarding = Boolean(
+        remote &&
+        (remote.isOnboarded || (remote as any).is_onboarded) &&
+        remote.gpa > 0 &&
+        remote.undergrad &&
+        remote.undergrad.trim() !== ''
+      );
+      if (hasCompletedOnboarding) {
+        localStorage.setItem('msadmit_onboarded', 'true');
+        navigate('/app');
+      } else {
+        localStorage.removeItem('msadmit_onboarded');
+        navigate('/onboarding');
+      }
     } catch (err: any) {
       console.error('Google Sign-In Error:', err);
       setErrors({
@@ -69,8 +82,9 @@ export function Auth({ mode }: AuthProps) {
           name: name.trim(),
           email: user.email || email.trim()
         });
+        localStorage.removeItem('msadmit_onboarded');
         // Sync with MongoDB backend
-        await api.updateProfile({ name: name.trim(), email: email.trim() });
+        await api.updateProfile({ name: name.trim(), email: email.trim(), isOnboarded: false, is_onboarded: false } as any);
         navigate('/onboarding');
       } else {
         const user = await loginWithEmail(email.trim(), password);
@@ -78,8 +92,21 @@ export function Auth({ mode }: AuthProps) {
           email: user.email || email.trim()
         });
         // Sync with MongoDB backend
-        await api.getProfile();
-        navigate('/app');
+        const remote = await api.getProfile();
+        const hasCompletedOnboarding = Boolean(
+          remote &&
+          (remote.isOnboarded || (remote as any).is_onboarded) &&
+          remote.gpa > 0 &&
+          remote.undergrad &&
+          remote.undergrad.trim() !== ''
+        );
+        if (hasCompletedOnboarding) {
+          localStorage.setItem('msadmit_onboarded', 'true');
+          navigate('/app');
+        } else {
+          localStorage.removeItem('msadmit_onboarded');
+          navigate('/onboarding');
+        }
       }
     } catch (err: any) {
       console.error('Email Auth Error:', err);

@@ -14,6 +14,8 @@ class DocumentResponse(DocumentBase):
     user_id: Union[str, int]
     cloudinary_url: Optional[str] = None
     extracted_text_preview: Optional[str] = None
+    extracted_text: Optional[str] = None
+    parsed_data: Optional[Dict[str, Any]] = None
     status: str
     created_at: datetime
     updated_at: datetime

@@ -4,6 +4,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 
+import { ErrorBoundary } from '../ui/ErrorBoundary';
+
 export function AppShell() {
   const location = useLocation();
   const reduce = useReducedMotion();
@@ -24,7 +26,9 @@ export function AppShell() {
           transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
           className="mx-auto max-w-[1200px] px-6 py-10 md:px-10 md:py-12">
           
-          <Outlet />
+          <ErrorBoundary fallbackTitle="Something went wrong loading this page">
+            <Outlet />
+          </ErrorBoundary>
         </motion.div>
       </main>
     </div>);

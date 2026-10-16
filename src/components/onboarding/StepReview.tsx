@@ -16,13 +16,12 @@ export function StepReview({ draft, files, onEdit }: StepReviewProps) {
     title: 'Academic',
     step: 0,
     rows: [
-    ['Institution', draft.undergrad],
-    ['Degree', draft.degree],
-    ['GPA', `${draft.gpa} / 10`],
-    ['Work experience', `${draft.workMonths} months`],
-    ['Internships', String(draft.internships)],
-    ['Publications', String(draft.publications)],
-    ['Target', `${draft.targetProgram}, ${draft.intake}`]]
+      ['Institution', draft.undergrad || 'Not specified'],
+      ['Standing', draft.institutionTier === 1 ? 'Tier 1 (All IITs & IISc)' : draft.institutionTier === 2 ? 'Tier 2 (All NITs & IIITs)' : 'Tier 3 (Other Colleges / Fr. CRIT)'],
+      ['Degree', draft.degree || 'Not specified'],
+      ['GPA', `${draft.gpa} / 10`],
+      ['Target', `${draft.targetProgram}, ${draft.intake}`]
+    ]
 
   },
   {
@@ -37,10 +36,10 @@ export function StepReview({ draft, files, onEdit }: StepReviewProps) {
     title: 'Documents',
     step: 2,
     rows: [
-    ['Resume', files.resume[0]?.name ?? 'Not uploaded'],
-    ['SOP', files.sop[0]?.name ?? 'Not uploaded'],
-    ['LORs', files.lor.length ? `${files.lor.length} file${files.lor.length > 1 ? 's' : ''}` : 'Not uploaded']]
-
+      ['Resume', files.resume[0]?.name ?? 'Not uploaded'],
+      ['SOP', files.sop[0]?.name ?? 'Not uploaded'],
+      ['LORs', files.lor.length ? `${files.lor.length} file${files.lor.length > 1 ? 's' : ''}` : 'Not uploaded']
+    ]
   }];
 
 

@@ -476,8 +476,8 @@ export function QsUniversityDrawer({ item, onClose }: QsUniversityDrawerProps) {
                   Antigravity simulates your admission readiness score for {item.name} based on your GPA, GRE, publications, and professional background.
                 </p>
                 <div className="mt-4 flex gap-2">
-                  <Button to="/app/explorer" size="sm" className="w-full">
-                    Simulate Profile Fit <ArrowRightIcon className="h-3.5 w-3.5" />
+                  <Button to="/app/recommendations" size="sm" className="w-full">
+                    View in Recommendations <ArrowRightIcon className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>

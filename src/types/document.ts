@@ -8,6 +8,9 @@ export interface VaultDocument {
   updated: string;
   linkedTo: string[];
   status: 'final' | 'needs review' | 'reviewed';
+  cloudinaryUrl?: string;
+  extractedText?: string;
+  parsedData?: any;
 }
 
 export interface UploadedFile {

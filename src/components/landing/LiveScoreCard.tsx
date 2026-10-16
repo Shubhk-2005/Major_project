@@ -4,13 +4,13 @@ import { ArrowRightIcon } from 'lucide-react';
 import { ScoreGauge } from '../ui/ScoreGauge';
 import { ShapBars } from '../ui/ShapBars';
 import { TierBadge } from '../ui/TierBadge';
-import { initialProfile } from '../../data/profile';
+import { sampleProfile } from '../../data/profile';
 import { computeScore, computeShap, countTiers, rankUniversities, tierRank } from '../../utils/scoring';
 import { useCountUp } from '../../hooks/useCountUp';
 
 const scenarios = [
-{ id: 'current', label: 'Current profile', profile: initialProfile },
-{ id: 'paper', label: '+1 workshop paper', profile: { ...initialProfile, publications: 1 } }];
+{ id: 'current', label: 'Current profile', profile: sampleProfile },
+{ id: 'paper', label: '+1 workshop paper', profile: { ...sampleProfile, publications: 1 } }];
 
 
 export function LiveScoreCard() {
@@ -32,7 +32,7 @@ export function LiveScoreCard() {
   const counts = countTiers(ranked);
 
   const change = useMemo(() => {
-    const base = rankUniversities(initialProfile);
+    const base = rankUniversities(sampleProfile);
     const next = rankUniversities(scenarios[1].profile);
     return next.
     map((n) => ({ n, b: base.find((x) => x.university.id === n.university.id) })).

@@ -2,14 +2,14 @@ import React from 'react';
 import { ScoreGauge } from '../ui/ScoreGauge';
 import { ShapBars } from '../ui/ShapBars';
 import { TierBadge } from '../ui/TierBadge';
-import { initialProfile } from '../../data/profile';
+import { sampleProfile } from '../../data/profile';
 import { appNavigation } from '../../data/navigation';
 import { computeScore, computeShap, rankUniversities } from '../../utils/scoring';
 
 export function DashboardPreview() {
-  const score = computeScore(initialProfile);
-  const factors = computeShap(initialProfile).slice(0, 6);
-  const ranked = rankUniversities(initialProfile);
+  const score = computeScore(sampleProfile);
+  const factors = computeShap(sampleProfile).slice(0, 6);
+  const ranked = rankUniversities(sampleProfile);
   const picks = [ranked[0], ranked[5], ranked[9]].filter(Boolean);
 
   return (

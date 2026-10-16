@@ -13,24 +13,27 @@ import { formatSigned } from '../../utils/format';
 interface WhatIfSimulatorProps {
   base: Profile;
   sim: Profile;
+  currentScore?: number;
   onChange: (patch: Partial<Profile>) => void;
   onReset: () => void;
 }
 
 const levers: {key: keyof Profile;label: string;min: number;max: number;step: number;format?: (n: number) => string;}[] = [
-{ key: 'gre', label: 'GRE total', min: 290, max: 340, step: 1 },
-{ key: 'publications', label: 'Publications', min: 0, max: 3, step: 1 },
-{ key: 'sopQuality', label: 'SOP quality', min: 40, max: 100, step: 1 },
-{ key: 'lorStrength', label: 'LOR strength', min: 1, max: 5, step: 1, format: (n) => `${n} / 5` },
-{ key: 'workMonths', label: 'Work experience', min: 0, max: 48, step: 1, format: (n) => `${n} mo` },
-{ key: 'toefl', label: 'TOEFL', min: 80, max: 120, step: 1 }];
+  { key: 'gpa', label: 'Undergrad GPA', min: 6.0, max: 10.0, step: 0.1, format: (n) => `${Number(n).toFixed(1)} / 10` },
+  { key: 'gre', label: 'GRE total', min: 260, max: 340, step: 1 },
+  { key: 'toefl', label: 'TOEFL total', min: 60, max: 120, step: 1 },
+  { key: 'publications', label: 'Publications', min: 0, max: 5, step: 1 },
+  { key: 'workMonths', label: 'Work experience', min: 0, max: 48, step: 1, format: (n) => n === 0 ? '0 mo' : n >= 12 ? `${(n / 12).toFixed(1)} yrs (${n} mo)` : `${(n / 12).toFixed(2)} yrs (${n} mo)` },
+  { key: 'internships', label: 'Internships count', min: 0, max: 6, step: 1, format: (n) => `${n} role${n === 1 ? '' : 's'}` }
+];
 
 
-export function WhatIfSimulator({ base, sim, onChange, onReset }: WhatIfSimulatorProps) {
-  const baseScore = computeScore(base);
-  const simScore = computeScore(sim);
+export function WhatIfSimulator({ base, sim, currentScore, onChange, onReset }: WhatIfSimulatorProps) {
+  // Synchronize base score with Dashboard liveScore
+  const effectiveBase = currentScore !== undefined && currentScore > 0 ? currentScore : computeScore(base);
+  const delta = computeScore(sim) - computeScore(base);
+  const simScore = Math.max(1, Math.min(99, Math.round(effectiveBase + delta)));
   const display = useCountUp(simScore, 0.5);
-  const delta = simScore - baseScore;
 
   const { baseCounts, simCounts, changes } = useMemo(() => {
     const b = rankUniversities(base);

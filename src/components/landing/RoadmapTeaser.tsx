@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Reveal } from './Reveal';
-import { initialProfile } from '../../data/profile';
+import { sampleProfile } from '../../data/profile';
 import { roadmapItems, roadmapMonths } from '../../data/roadmap';
 import { applyLever, computeScore } from '../../utils/scoring';
 import { Profile } from '../../types/profile';
@@ -14,7 +14,7 @@ export function RoadmapTeaser() {
   const reduce = useReducedMotion();
   const chosen = ['r2', 'r1', 'r4', 'r3'].map((id) => roadmapItems.find((r) => r.id === id)).filter((r): r is NonNullable<typeof r> => !!r);
 
-  let p: Profile = initialProfile;
+  let p: Profile = sampleProfile;
   const points = [{ month: 0, score: computeScore(p), label: 'Today' }];
   chosen.forEach((item) => {
     if (item.lever) p = applyLever(p, item.lever);

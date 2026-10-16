@@ -2,14 +2,14 @@ import React from 'react';
 import { Reveal } from './Reveal';
 import { FitReasons } from '../ui/FitReasons';
 import { TierBadge } from '../ui/TierBadge';
-import { initialProfile } from '../../data/profile';
+import { sampleProfile } from '../../data/profile';
 import { universities } from '../../data/universities';
 import { computeFit, computeScore } from '../../utils/scoring';
 
 export function ProblemSection() {
   const cmu = universities.find((u) => u.id === 'cmu');
   if (!cmu) return null;
-  const fit = computeFit(initialProfile, computeScore(initialProfile), cmu);
+  const fit = computeFit(sampleProfile, computeScore(sampleProfile), cmu);
 
   return (
     <section className="border-t border-line">
