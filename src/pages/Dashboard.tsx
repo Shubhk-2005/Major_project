@@ -31,7 +31,11 @@ export function Dashboard() {
 
   const upcoming = applications
     .filter((a) => a.stage === 'shortlisted' || a.stage === 'preparing')
-    .map((a) => ({ a, days: daysUntil(a.deadline), uni: universities.find((u) => u.id === a.universityId) }))
+    .map((a) => ({
+      a,
+      days: daysUntil(a.deadline),
+      uni: universities.find((u) => u.id === a.universityId) || (a.universityName ? { name: a.universityName } : undefined)
+    }))
     .sort((x, y) => x.days - y.days)[0];
 
   const openSuggestions = sopSegments.filter((s) => s.suggestion && !sopDecisions[s.id]).length;

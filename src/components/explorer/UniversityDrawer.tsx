@@ -53,7 +53,14 @@ export function UniversityDrawer({ item, onClose }: UniversityDrawerProps) {
           exit={reduce ? { opacity: 0 } : { x: 40, opacity: 0 }}
           transition={{ duration: 0.26, ease: [0.23, 1, 0.32, 1] }}>
           
-            <DrawerBody item={item} closeRef={closeRef} onClose={onClose} tracked={isTracked(item.university.id)} onTrack={() => addApplication(item.university.id)} profileSummary={{ gpa: profile.gpa, gre: profile.gre, publications: profile.publications, workMonths: profile.workMonths }} />
+            <DrawerBody
+              item={item}
+              closeRef={closeRef}
+              onClose={onClose}
+              tracked={isTracked(item.university.id)}
+              onTrack={() => addApplication(item.university.id, item.university, item.fit.tier, item.fit.fit, item.fit.reasons)}
+              profileSummary={{ gpa: profile.gpa, gre: profile.gre, publications: profile.publications, workMonths: profile.workMonths }}
+            />
           </motion.aside>
         </>
       }

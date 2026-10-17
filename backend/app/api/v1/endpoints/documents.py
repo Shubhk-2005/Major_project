@@ -70,19 +70,13 @@ async def upload_document(
         degree_extracted = str(parsed_resume.get("degree", "")).strip()
         tier_extracted = int(parsed_resume.get("institution_tier", 2))
 
+        # Auto-update profile with experiential credentials required for the ML model
+        # (Preserve user-entered GPA, Undergrad institution, and Tier from the application form)
         profile_update_data: Dict[str, Any] = {
             "work_months": work_months,
             "publications": pubs,
             "internships": internships
         }
-        if gpa_extracted > 0:
-            profile_update_data["gpa"] = gpa_extracted
-        if undergrad_extracted:
-            profile_update_data["undergrad"] = undergrad_extracted
-        if degree_extracted:
-            profile_update_data["degree"] = degree_extracted
-        if tier_extracted in [1, 2, 3]:
-            profile_update_data["institution_tier"] = tier_extracted
 
         # Auto-update profile in database so ML model picks up real credentials
         if settings.DB_ENGINE == "mongodb":

@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRightIcon, CheckIcon, ChevronRightIcon } from 'lucide-react';
+import { ArrowRightIcon, CheckIcon, ChevronRightIcon, Trash2Icon } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { TierBadge } from '../components/ui/TierBadge';
 import { FitReasons } from '../components/ui/FitReasons';
@@ -10,6 +10,8 @@ import { useProfile } from '../contexts/ProfileContext';
 import { daysUntil, formatDate } from '../utils/format';
 import { countTiers } from '../utils/scoring';
 import { DocKey, DocStatus, Stage } from '../types/application';
+import { universities } from '../data/universities';
+import { Tier, RankedUniversity } from '../types/university';
 
 const docColumns: {key: DocKey;label: string;}[] = [
 { key: 'sop', label: 'SOP' },
@@ -30,21 +32,93 @@ const stages: {value: Stage;label: string;}[] = [
 const nextStatus: Record<DocStatus, DocStatus> = { missing: 'draft', draft: 'final', final: 'missing' };
 
 export function Tracker() {
-  const { applications, updateApplication } = useApplications();
+  const { applications, updateApplication, removeApplication } = useApplications();
   const { ranked } = useProfile();
   const [filter, setFilter] = useState<'all' | Stage>('all');
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const rows = useMemo(
-    () =>
-    applications.
-    map((a) => ({ app: a, ranked: ranked.find((r) => r.university.id === a.universityId), days: daysUntil(a.deadline) })).
-    filter((r) => r.ranked && (filter === 'all' || r.app.stage === filter)).
-    sort((x, y) => x.days - y.days),
-    [applications, ranked, filter]
+  const getRankedForApp = useCallback(
+    (app: Application): RankedUniversity => {
+      // 1. Try finding in live ML recommendations
+      const normUid = app.universityId.toLowerCase().trim();
+      const normName = (app.universityName || '').toLowerCase().trim();
+
+      const live = ranked.find(
+        (r) =>
+          r.university.id.toLowerCase() === normUid ||
+          r.university.name.toLowerCase() === normUid ||
+          (normName && r.university.name.toLowerCase() === normName) ||
+          r.university.id.replace(/-/g, '').toLowerCase() === normUid.replace(/-/g, '')
+      );
+      if (live) return live;
+
+      // 2. Try finding in static universities catalog
+      const staticUni = universities.find(
+        (u) =>
+          u.id.toLowerCase() === normUid ||
+          u.name.toLowerCase() === normUid ||
+          (normName && u.name.toLowerCase() === normName) ||
+          u.name.toLowerCase().replace(/\s+/g, '-') === normUid
+      );
+
+      const name =
+        app.universityName ||
+        staticUni?.name ||
+        app.universityId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      const program = app.program || staticUni?.program || 'MS in Computer Science';
+      const tier: Tier = app.tier || (staticUni ? 'target' : 'consider');
+      const fitScore = app.fitScore ?? 75;
+
+      return {
+        university: staticUni || {
+          id: app.universityId,
+          name,
+          program,
+          course: 'Computer Science',
+          country: app.country || 'United States',
+          city: '',
+          rank: 50,
+          acceptance: 25,
+          avgGre: 320,
+          avgGpa: 8.5,
+          avgToefl: 100,
+          tuition: 35000,
+          living: 15000,
+          deadline: app.deadline,
+          bar: 70,
+          researchWeight: 'medium'
+        },
+        fit: {
+          tier,
+          fit: fitScore,
+          reasons: app.reasons || [
+            {
+              key: 'fit',
+              label: 'Tracked Program',
+              impact: 2.0,
+              text: `Added to application tracker as a ${tier} program.`
+            }
+          ]
+        }
+      };
+    },
+    [ranked]
   );
 
-  const tracked = ranked.filter((r) => applications.some((a) => a.universityId === r.university.id));
+  const rows = useMemo(
+    () =>
+      applications
+        .map((a) => ({
+          app: a,
+          ranked: getRankedForApp(a),
+          days: daysUntil(a.deadline)
+        }))
+        .filter((r) => filter === 'all' || r.app.stage === filter)
+        .sort((x, y) => x.days - y.days),
+    [applications, getRankedForApp, filter]
+  );
+
+  const tracked = useMemo(() => applications.map((a) => getRankedForApp(a)), [applications, getRankedForApp]);
   const mix = countTiers(tracked);
   const outstanding = applications.filter((a) => a.stage !== 'submitted' && a.stage !== 'decision').reduce((n, a) => n + Object.values(a.docs).filter((s) => s !== 'final').length, 0);
   const dueSoon = applications.filter((a) => a.stage !== 'submitted' && a.stage !== 'decision' && daysUntil(a.deadline) <= 90).length;
@@ -197,6 +271,16 @@ export function Tracker() {
                             <p className="text-[12px] text-ink-3">Notes</p>
                             <p className="mt-2 text-[14px] leading-relaxed text-ink-2">{app.note}</p>
                             <p className="mt-3 font-mono text-[12px] text-ink-3">Application fee ${app.fee}</p>
+                            <div className="mt-4 pt-3 border-t border-line">
+                              <button
+                                type="button"
+                                onClick={() => removeApplication(app.id)}
+                                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-rose-600 hover:text-rose-700 hover:underline transition-colors"
+                              >
+                                <Trash2Icon className="h-3.5 w-3.5" />
+                                Remove from tracker
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </td>

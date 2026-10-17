@@ -373,12 +373,12 @@ export function RecommendationDrawer({ item, onClose }: RecommendationDrawerProp
               </div>
 
               <Button
-                onClick={() => addApplication(u.id)}
+                onClick={() => addApplication(u.id, u, item.fit.tier, item.fit.fit, item.fit.reasons)}
                 disabled={tracked}
                 variant={tracked ? 'secondary' : 'primary'}
                 className="gap-1.5"
               >
-                {tracked ? <CheckIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />}
+                {tracked ? <CheckIcon className="h-4 w-4 text-emerald-600" /> : <PlusIcon className="h-4 w-4" />}
                 {tracked ? 'In Applications Tracker' : 'Track Application'}
               </Button>
             </div>

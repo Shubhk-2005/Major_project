@@ -1,4 +1,5 @@
 import json
+import re
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 import google.generativeai as genai
@@ -21,24 +22,24 @@ CRITERIA_WEIGHTS = {
 # Initialize genai if key is present
 if settings.GEMINI_API_KEY:
     try:
-        genai.configure(api_key=settings.GEMINI_API_KEY, transport="rest")
+        genai.configure(api_key=settings.GEMINI_API_KEY)
     except Exception as e:
         logger.warning(f"Could not configure Gemini API: {e}")
 
 
 def _get_gemini_model():
     """Retrieve active Gemini generative model instance."""
-    for model_name in ["gemini-3.8-flash", "gemini-3.5-flash", "gemma-4-26b-a4b-it"]:
+    for model_name in ["gemini-3.5-flash-lite", "gemma-4-26b-a4b-it", "gemini-3.8-flash"]:
         try:
             return genai.GenerativeModel(model_name)
         except Exception:
             continue
-    return genai.GenerativeModel("gemma-4-26b-a4b-it")
+    return genai.GenerativeModel("gemini-3.5-flash-lite")
 
 
-def _generate_with_gemini(prompt: str, timeout: int = 3) -> Optional[str]:
-    """Attempt generation with Gemini, falling back swiftly if rate-limited or timed out."""
-    for model_name in ["gemini-3.8-flash"]:
+def _generate_with_gemini(prompt: str, timeout: int = 25) -> Optional[str]:
+    """Attempt generation with available LLM models in priority order."""
+    for model_name in ["gemini-3.5-flash-lite", "gemma-4-26b-a4b-it", "gemini-3.8-flash"]:
         try:
             model = genai.GenerativeModel(model_name)
             response = model.generate_content(prompt, request_options={"timeout": timeout, "retry": None})
@@ -46,8 +47,54 @@ def _generate_with_gemini(prompt: str, timeout: int = 3) -> Optional[str]:
                 return response.text.strip()
         except Exception as e:
             err_msg = str(e)
-            logger.warning(f"Gemini call with {model_name} failed: {err_msg[:80]}")
-            break
+            logger.warning(f"Generation call with {model_name} failed: {err_msg[:80]}")
+            continue
+    return None
+
+
+def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
+    """Extract and parse first valid JSON object from LLM response text."""
+    if not text:
+        return None
+    cleaned = text.strip()
+
+    # 1. Clean markdown code blocks if wrapped
+    if "```json" in cleaned:
+        for block in cleaned.split("```json")[1:]:
+            sub = block.split("```")[0].strip()
+            try:
+                return json.loads(sub)
+            except Exception:
+                pass
+    if "```" in cleaned:
+        parts = cleaned.split("```")
+        for i in range(1, len(parts), 2):
+            sub = parts[i].strip()
+            try:
+                return json.loads(sub)
+            except Exception:
+                pass
+
+    # 2. Find balanced outer curly braces { ... } using decoder
+    start_idx = cleaned.find("{")
+    while start_idx != -1:
+        try:
+            dec = json.JSONDecoder()
+            parsed, _ = dec.raw_decode(cleaned[start_idx:])
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            pass
+        start_idx = cleaned.find("{", start_idx + 1)
+
+    # 3. Regex search for outermost { ... }
+    m = re.search(r"(\{[\s\S]*\})", cleaned)
+    if m:
+        try:
+            return json.loads(m.group(1))
+        except Exception:
+            pass
+
     return None
 
 
@@ -570,7 +617,7 @@ def _fallback_roadmap(profile_data: Dict[str, Any]) -> Dict[str, Any]:
 
 def parse_resume(resume_text: str) -> Dict[str, Any]:
     """
-    Extract structured academic, professional, and research metrics from resume text using Gemini:
+    Extract structured academic, professional, and research metrics from resume text:
       - name: str
       - email: str
       - phone: str
@@ -591,30 +638,30 @@ def parse_resume(resume_text: str) -> Dict[str, Any]:
     if not settings.GEMINI_API_KEY:
         return _fallback_parse_resume(resume_text)
 
-    prompt = f"""You are an elite Graduate Admissions Evaluator and Technical Resume Parser.
+    prompt = f"""You are an expert technical resume parser for graduate university admissions.
 Analyze the following resume text and extract the applicant credentials with 100% precision.
-Do not hallucinate or invent qualifications. Extract exactly what is stated in the resume.
+Extract ONLY what is explicitly stated in the resume. Do NOT fabricate, assume, or invent qualifications.
 
-GUIDELINES:
+EXTRACTION INSTRUCTIONS:
 1. "name": Full name of candidate.
 2. "email": Email address.
 3. "phone": Phone number.
-4. "undergrad": Name of undergraduate institution/college (e.g. Fr. Conceicao Rodrigues Institute Of Technology).
-5. "degree": Undergraduate degree and specialization (e.g. B.Tech in Computer Engineering - Honors in AI & ML).
-6. "gpa": Undergraduate GPA or CGPA as a decimal float (e.g. 8.9 for 8.9/10 CGPA).
+4. "undergrad": Name of undergraduate institution/college as written on resume.
+5. "degree": Undergraduate degree and major/specialization (e.g. Bachelor of Technology in Computer Science).
+6. "gpa": Undergraduate GPA or CGPA as a decimal float (e.g. 8.74 or 3.8). If given as percentage (e.g. 85%), normalize to scale of 10 (8.5).
 7. "institution_tier": Integer tier of the undergraduate college:
-   - 1 for all 23-25 Indian Institutes of Technology (IITs: IIT Bombay, IIT Delhi, IIT Madras, etc.) and IISc Bangalore.
-   - 2 for all National Institutes of Technology (NITs: NIT Trichy, NIT Surathkal, etc.), Indian Institutes of Information Technology (IIITs: IIIT Hyderabad, IIIT Bangalore, etc.), and BITS Pilani.
-   - 3 for all other institutions (State universities, autonomous colleges, affiliated engineering institutes, including Fr. Conceicao Rodrigues Institute of Technology / Fr. CRIT, Mumbai University, Anna University, etc.).
-8. "work_experience_years": Total full-time or substantive software engineering tenure in years (e.g. 0.33 for 4 months, 1.0 for 1 year).
-9. "work_months": Total industry or internship experience duration in months (e.g. 4 for Dec 2025 - Mar 2026).
-10. "internships_count": Total number of distinct internship employment roles held under Work Experience (e.g. 1 if applicant held 1 internship role). CRITICAL: Do NOT count projects that mention the word internship in their title or description (e.g. do not count an internship recommendation project as an internship).
+   - 1 for Indian Institutes of Technology (IITs: IIT Bombay, IIT Delhi, etc.) and IISc Bangalore, or Top 50 global universities.
+   - 2 for National Institutes of Technology (NITs: NIT Trichy, NIT Surathkal, etc.), Indian Institutes of Information Technology (IIITs: IIIT Hyderabad, etc.), and BITS Pilani.
+   - 3 for all other regional universities, autonomous colleges, and affiliated institutes.
+8. "work_experience_years": Total full-time work experience in years (0.0 if only internships).
+9. "work_months": Total cumulative internship and work duration in months (e.g. 6 for two 3-month internships).
+10. "internships_count": Total number of distinct internship roles held under work/professional experience. Do NOT count academic projects that mention the word internship.
 11. "research_publications": Count of peer-reviewed conference or journal papers authored/co-authored (0 if none).
-12. "key_skills": List of primary technical skills, frameworks, and databases (e.g. ["Python", "FastAPI", "MongoDB", "Docker", "XGBoost", "Sentence-Transformers", "ChromaDB", "PHP"]).
-13. "projects": List of notable projects with titles (e.g. ["MsAdmit - AI-Powered Admission Competitiveness", "YuvaSetu - AI-Powered Internship Recommendation"]).
-14. "certifications": List of verified certifications (e.g. ["Oracle AI Foundations Associate", "Neo4j Certified Professional"]).
-15. "awards": List of hackathon awards or achievements.
-16. "summary": Concise 1-2 sentence professional summary of profile.
+12. "key_skills": List of technical skills, languages, tools, and frameworks found in the resume.
+13. "projects": List of notable project titles found in the resume.
+14. "certifications": List of verified certifications found in the resume.
+15. "awards": List of hackathon awards, honors, or achievements found in the resume.
+16. "summary": Concise 1-2 sentence professional profile summary.
 
 RESUME TEXT:
 \"\"\"
@@ -624,51 +671,66 @@ RESUME TEXT:
 RESPONSE FORMAT:
 Return strictly a valid JSON object matching this schema. Do not include markdown or explanations outside the JSON object:
 {{
-  "name": "Applicant Name",
-  "email": "email@example.com",
-  "phone": "+91...",
-  "undergrad": "Fr. Conceicao Rodrigues Institute Of Technology",
-  "degree": "B.Tech in Computer Engineering - Honors in AI & ML",
-  "gpa": 8.9,
+  "name": "Candidate Full Name",
+  "email": "candidate@example.com",
+  "phone": "+1 555-0199",
+  "undergrad": "Undergraduate University Name",
+  "degree": "Degree and Specialization",
+  "gpa": 8.5,
   "institution_tier": 2,
-  "work_experience_years": 0.33,
-  "work_months": 4,
-  "internships_count": 1,
+  "work_experience_years": 0.5,
+  "work_months": 6,
+  "internships_count": 2,
   "research_publications": 0,
-  "key_skills": ["Python", "FastAPI", "MongoDB", "Docker", "XGBoost"],
-  "projects": ["MsAdmit", "YuvaSetu"],
-  "certifications": ["Oracle AI Foundations", "Neo4j Certified Professional"],
-  "awards": ["Smart India Hackathon Finalist", "Brainwave 2.0 Winner"],
-  "summary": "Final Year Computer Engineering Student..."
+  "key_skills": ["Python", "SQL", "Docker"],
+  "projects": ["Project Title 1", "Project Title 2"],
+  "certifications": ["Certification Name"],
+  "awards": ["Award / Honor"],
+  "summary": "Profile summary..."
 }}
 """
 
     try:
-        raw_text = _generate_with_gemini(prompt, timeout=15)
+        raw_text = _generate_with_gemini(prompt, timeout=25)
         if not raw_text:
             return _fallback_parse_resume(resume_text)
 
-        # Parse JSON robustly
-        idx = raw_text.find("{")
-        if idx != -1:
-            dec = json.JSONDecoder()
-            parsed, _ = dec.raw_decode(raw_text[idx:])
-        else:
-            parsed = json.loads(raw_text.strip())
+        parsed = _extract_json_object(raw_text)
+        if not parsed or not isinstance(parsed, dict):
+            logger.warning("Could not extract JSON from LLM output, falling back to heuristic parser")
+            return _fallback_parse_resume(resume_text)
 
+        # Work experience & duration calculation
         exp_years = float(parsed.get("work_experience_years", 0.0))
         work_m = int(parsed.get("work_months", int(round(exp_years * 12.0))))
         if work_m > 0 and exp_years == 0.0:
             exp_years = round(work_m / 12.0, 2)
 
+        # GPA normalization
+        raw_gpa = float(parsed.get("gpa", 0.0))
+        if raw_gpa > 10.0:
+            raw_gpa = round(raw_gpa / 10.0, 2)
+
+        # Undergrad & Tier normalization
+        undergrad_name = str(parsed.get("undergrad", "")).strip()
+        ug_lower = undergrad_name.lower()
+        if bool(re.search(r"\b(iit\b|iits\b|indian\s+institute\s+of\s+technology|iisc\b)", ug_lower)):
+            tier = 1
+        elif bool(re.search(r"\b(nit\b|nits\b|national\s+institute\s+of\s+technology|iiit\b|iiits\b|indian\s+institute\s+of\s+information\s+technology|bits\s+pilani|bits\b)", ug_lower)):
+            tier = 2
+        else:
+            tier = int(parsed.get("institution_tier", 3))
+            if tier not in [1, 2, 3]:
+                tier = 3
+
         return {
             "name": str(parsed.get("name", "")).strip(),
             "email": str(parsed.get("email", "")).strip(),
             "phone": str(parsed.get("phone", "")).strip(),
-            "undergrad": str(parsed.get("undergrad", "")).strip(),
+            "undergrad": undergrad_name,
             "degree": str(parsed.get("degree", "")).strip(),
-            "gpa": float(parsed.get("gpa", 0.0)),
-            "institution_tier": 1 if any(k in str(parsed.get("undergrad", "")).lower() for k in ["iit", "indian institute of technology", "iisc"]) else 2 if any(k in str(parsed.get("undergrad", "")).lower() for k in ["nit", "national institute of technology", "iiit", "bits"]) else int(parsed.get("institution_tier", 3)),
+            "gpa": raw_gpa,
+            "institution_tier": tier,
             "work_experience_years": exp_years,
             "work_months": work_m,
             "internships_count": int(parsed.get("internships_count", 0)),
@@ -680,172 +742,255 @@ Return strictly a valid JSON object matching this schema. Do not include markdow
             "summary": str(parsed.get("summary", "Parsed candidate profile."))
         }
     except Exception as e:
-        logger.error(f"Error parsing resume via Gemini: {e}")
+        logger.error(f"Error parsing resume via LLM: {e}")
         return _fallback_parse_resume(resume_text)
 
 
 def _fallback_parse_resume(resume_text: str) -> Dict[str, Any]:
-    """High-fidelity heuristic fallback parser using regex and structural section extraction."""
-    import re
-
-    text_lower = resume_text.lower()
-
-    # 1. GPA Extraction
-    gpa = 0.0
-    gpa_m = re.search(r"(?:cgpa|gpa|pointer|percentage)\s*[:=-]?\s*([0-9]+(?:\.[0-9]+)?)", resume_text, re.IGNORECASE)
-    if gpa_m:
-        try:
-            gpa = float(gpa_m.group(1))
-        except Exception:
-            pass
-
-    # 2. Candidate Name
+    """
+    High-fidelity heuristic fallback parser using regex and structural section extraction.
+    Contains ZERO hardcoded applicant profiles, institutions, projects, or credentials.
+    """
     lines = [l.strip() for l in resume_text.split("\n") if l.strip()]
-    name = lines[0] if lines else "Applicant"
 
-    # 3. Undergrad Institution
-    undergrad = ""
-    for line in lines:
-        line_clean = line.strip()
-        if any(k in line.lower() for k in ["fr. crit", "fr. conceicao", "conceicao rodrigues"]):
-            undergrad = "Fr. Conceicao Rodrigues Institute Of Technology (Fr. CRIT)"
+    # 1. Candidate Name (search top lines for clean candidate name)
+    name = "Applicant"
+    for l in lines[:10]:
+        cleaned = re.sub(r"[^\w\s.-]", "", l).strip()
+        if not cleaned:
+            continue
+        low = cleaned.lower()
+        if any(h in low for h in [
+            "@", "http", "www", "github", "linkedin", "phone", "resume", "curriculum",
+            "education", "experience", "projects", "skills", "summary", "profile", "contact"
+        ]):
+            continue
+        if len(cleaned.split()) >= 1 and len(cleaned) <= 40 and not any(c.isdigit() for c in cleaned):
+            name = cleaned
             break
-        if any(k in line.lower() for k in ["institute of technology", "engineering college", "university"]):
-            # Strip location prefixes like "On-site•Navi Mumbai, Maharashtra, India"
-            cleaned_line = re.sub(r"^.*?india\s*", "", line_clean, flags=re.IGNORECASE)
-            undergrad = cleaned_line.split("|")[0].strip() or line_clean
-            break
-    if not undergrad:
-        undergrad = "Fr. Conceicao Rodrigues Institute Of Technology (Fr. CRIT)"
 
-    # 4. Degree
-    degree = ""
-    for line in lines:
-        if any(k in line.lower() for k in ["b.tech", "b.e.", "bachelor", "b.s."]):
-            degree = line.split("|")[0].strip()
-            break
-    if not degree:
-        degree = "B.Tech in Computer Engineering - Honors in AI & ML"
-
-    # 5. Email & Phone
+    # 2. Email & Phone
     email_m = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", resume_text)
     email = email_m.group(0) if email_m else ""
-    phone_m = re.search(r"\+?[0-9]{10,13}", resume_text)
+    phone_m = re.search(r"(?:\+?\d{1,3}[-.\s]?)?\(?\d{3,4}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\+?\d{10,13}", resume_text)
     phone = phone_m.group(0) if phone_m else ""
 
-    # 6. College Tier:
-    # Tier 1: All 23-25 IITs and IISc
-    # Tier 2: All NITs, IIITs, BITS
-    # Tier 3: All other colleges (Fr. CRIT, Mumbai University, state/private/autonomous/affiliated institutes)
-    ug_low = undergrad.lower()
-    is_tier_1 = bool(re.search(r"\b(iit\b|iits\b|indian\s+institute\s+of\s+technology|iisc\b)", ug_low))
-    is_tier_2 = bool(re.search(r"\b(nit\b|nits\b|national\s+institute\s+of\s+technology|iiit\b|iiits\b|indian\s+institute\s+of\s+information\s+technology|bits\s+pilani|bits\b)", ug_low))
+    # 3. GPA Extraction
+    gpa = 0.0
+    gpa_m = re.search(
+        r"(?:cgpa|gpa|pointer|percentage|aggregate)\s*[:=-]?\s*([0-9]+(?:\.[0-9]+)?)(?:\s*(?:/|out of)\s*([0-9]+(?:\.[0-9]+)?))?",
+        resume_text,
+        re.IGNORECASE
+    )
+    if gpa_m:
+        try:
+            val = float(gpa_m.group(1))
+            if val > 10.0:
+                val = round(val / 10.0, 2)
+            gpa = val
+        except Exception:
+            pass
+    else:
+        slash_m = re.search(r"\b([0-9]\.[0-9]{1,2})\s*/\s*(?:10(?:\.0)?|4(?:\.0)?)", resume_text)
+        if slash_m:
+            try:
+                gpa = float(slash_m.group(1))
+            except Exception:
+                pass
 
-    if is_tier_1:
+    # 4. Undergrad Institution
+    non_uni_words = [
+        "hackathon", "finalist", "winner", "runner", "compet", "participat",
+        "organized", "conference", "workshop", "event", "summit", "paper",
+        "published", "patent", "internship", "project"
+    ]
+    edu_sec = ""
+    edu_match = re.search(
+        r"(?:^|\n)\s*(?:education|academic(?:s|\s+background|\s+qualifications)?)\s*[:\n](.*?)(?=\n\s*(?:work\s+experience|professional\s+experience|experience|projects?|skills?|technical\s+skills?|certifications?|awards?|publications?|\Z))",
+        resume_text,
+        re.DOTALL | re.IGNORECASE
+    )
+    if edu_match:
+        edu_sec = edu_match.group(1).strip()
+    target_edu = edu_sec if edu_sec else resume_text
+
+    undergrad = ""
+    for line in target_edu.split("\n"):
+        line_clean = line.strip()
+        low = line_clean.lower()
+        if any(w in low for w in non_uni_words):
+            continue
+        if any(k in low for k in [
+            "university", "institute of technology", "institute of science",
+            "engineering college", "college of engineering", "institute of information technology",
+            "national institute", "indian institute", "polytechnic", "vidyapeeth", "campus",
+            "school of engineering", "iit ", "iit,", "nit ", "nit,", "iiit ", "iiit,", "bits "
+        ]):
+            cleaned_line = re.sub(r"^(?:on-site|remote|hybrid|location[:\s]|address[:\s])[\s•·|,-]*", "", line_clean, flags=re.IGNORECASE)
+            undergrad = cleaned_line.split("|")[0].split("(")[0].strip() or line_clean
+            break
+    if not undergrad and edu_sec:
+        edu_lines = [l.strip() for l in edu_sec.split("\n") if l.strip()]
+        for el in edu_lines:
+            if not any(w in el.lower() for w in non_uni_words):
+                undergrad = el.split("|")[0].split("(")[0].strip()
+                break
+    if not undergrad:
+        undergrad = "Undergraduate Institution"
+
+    # College Tier
+    ug_low = undergrad.lower()
+    if bool(re.search(r"\b(iit\b|iits\b|indian\s+institute\s+of\s+technology|iisc\b)", ug_low)):
         tier = 1
-    elif is_tier_2:
+    elif bool(re.search(r"\b(nit\b|nits\b|national\s+institute\s+of\s+technology|iiit\b|iiits\b|indian\s+institute\s+of\s+information\s+technology|bits\s+pilani|bits\b)", ug_low)):
         tier = 2
     else:
         tier = 3
 
-    # 7. Internships & Work Duration
-    # Isolate WORK EXPERIENCES section specifically to avoid counting 'internship' mentioned in project descriptions (like YuvaSetu)
+    # Degree
+    degree = ""
+    for line in target_edu.split("\n"):
+        line_clean = line.strip()
+        if re.search(r"\b(b\.?tech|b\.?e\.?|bachelor|b\.?s\.?|m\.?tech|m\.?s\.?|master|bca|mca)\b", line_clean, re.IGNORECASE):
+            degree = line_clean.split("|")[0].split("(")[0].strip()
+            break
+    if not degree:
+        degree = "Bachelor of Engineering"
+
+    # 5. Work Experience & Internships
     exp_sec = ""
-    sec_match = re.search(
-        r"(?:^|\n)\s*(?:work\s+experience[s]?|professional\s+experience|employment\s+history|experience[s]?)\s*[:\n](.*?)(?=\n\s*(?:projects?|skills?|education|awards?|certifications?|publications?|\Z))",
+    exp_match = re.search(
+        r"(?:^|\n)\s*(?:work\s+experience[s]?|professional\s+experience|employment\s+history|experience[s]?)\s*[:\n](.*?)(?=\n\s*(?:projects?|skills?|technical\s+skills?|education|awards?|certifications?|publications?|\Z))",
         resume_text,
         re.DOTALL | re.IGNORECASE
     )
-    if sec_match:
-        exp_sec = sec_match.group(1).strip()
-    else:
-        exp_sec = resume_text
+    if exp_match:
+        exp_sec = exp_match.group(1).strip()
 
-    # Extract distinct internship roles in the experience section only
     intern_count = 0
-    if "intern" in exp_sec.lower():
-        # Find distinct date ranges in the experience section
-        date_ranges = re.findall(
-            r"(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*\d{4}\s*-\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|present)[a-z]*\s*\d{0,4}",
+    work_months = 0
+    if exp_sec:
+        for exp_line in exp_sec.split("\n"):
+            if re.search(r"\b(intern|internship|trainee|apprentice|fellow)\b", exp_line, re.IGNORECASE):
+                intern_count += 1
+
+        date_matches = re.findall(
+            r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(\d{4})\s*-\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|present)[a-z]*\s*(\d{0,4})",
             exp_sec,
             re.IGNORECASE
         )
-        if date_ranges:
-            intern_count = len(date_ranges)
-        else:
-            intern_count = 1
-
-    intern_count = max(0, min(intern_count, 4))
-
-    # Calculate duration from explicit date ranges (e.g. Dec 2025 - Mar 2026), explicit years/months, or internships
-    target_exp = exp_sec if exp_sec else text_lower
-    date_m = re.search(
-        r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(\d{4})\s*-\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(\d{4})",
-        target_exp,
-        re.IGNORECASE
-    )
-    if date_m:
         m_names = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
-        m1 = m_names.index(date_m.group(1)[:3].lower())
-        y1 = int(date_m.group(2))
-        m2 = m_names.index(date_m.group(3)[:3].lower())
-        y2 = int(date_m.group(4))
-        diff = (y2 - y1) * 12 + (m2 - m1) + 1
-        work_months = max(1, diff)
-    else:
-        years_m = re.search(r"(\d+(?:\.\d+)?)\s*(?:year|yr)s?", target_exp, re.IGNORECASE)
-        months_m = re.search(r"(\d+)\s*(?:month|mo)s?", target_exp, re.IGNORECASE)
-        if years_m:
-            work_months = int(round(float(years_m.group(1)) * 12))
-        elif months_m:
-            work_months = int(months_m.group(1))
-        else:
-            work_months = (intern_count * 3) if intern_count > 0 else 0
+        for dm in date_matches:
+            try:
+                m1 = m_names.index(dm[0][:3].lower())
+                y1 = int(dm[1])
+                m2_str = dm[2].lower()
+                if "pres" in m2_str:
+                    m2 = 9
+                    y2 = 2026
+                else:
+                    m2 = m_names.index(m2_str[:3])
+                    y2 = int(dm[3]) if dm[3] else y1
+                diff = max(1, (y2 - y1) * 12 + (m2 - m1) + 1)
+                work_months += diff
+            except Exception:
+                pass
 
+        if work_months == 0 and intern_count > 0:
+            work_months = intern_count * 3
+
+    intern_count = max(0, min(intern_count, 6))
     work_years = round(work_months / 12.0, 2)
 
-    # 8. Publications
-    pub_matches = re.findall(r"(?:\[\d+\]|\b\d+\.|\bpaper\b|\bconference\b|\bjournal\b|\bieee\b|\bacm\b|\barxiv\b)", text_lower)
-    pub_count = min(len(pub_matches), 5) if "publication" in text_lower else 0
+    # 6. Publications
+    pub_count = 0
+    pub_match = re.search(
+        r"(?:^|\n)\s*(?:publications?|research\s+papers?)\s*[:\n](.*?)(?=\n\s*(?:projects?|skills?|technical\s+skills?|education|awards?|certifications?|\Z))",
+        resume_text,
+        re.DOTALL | re.IGNORECASE
+    )
+    if pub_match:
+        pub_text = pub_match.group(1).strip()
+        pub_items = [p.strip() for p in pub_text.split("\n") if len(p.strip()) > 15]
+        pub_count = min(len(pub_items), 10)
+    elif "publication" in resume_text.lower():
+        paper_matches = re.findall(r"(?:\[\d+\]|\bieee\b|\bacm\b|\bconference\b|\bjournal\b|\barxiv\b)", resume_text, re.IGNORECASE)
+        pub_count = min(len(paper_matches), 5)
 
-    # 9. Key Technical Skills
+    # 7. Key Technical Skills
     known_skills = [
-        "Python", "FastAPI", "MongoDB", "Docker", "XGBoost", "Sentence-Transformers",
-        "ChromaDB", "Redis", "Nginx", "SQL", "PHP", "AWS", "MySQL", "Neo4j", "Pinecone",
-        "FAISS", "scikit-learn", "Pandas", "NumPy"
+        "Python", "Java", "C++", "C", "C#", "Go", "Rust", "JavaScript", "TypeScript",
+        "HTML", "CSS", "SQL", "NoSQL", "React", "Angular", "Vue", "Node.js", "Express",
+        "Django", "Flask", "FastAPI", "Spring Boot", "Docker", "Kubernetes", "AWS", "GCP",
+        "Azure", "Git", "Linux", "PostgreSQL", "MySQL", "MongoDB", "Redis", "Kafka",
+        "TensorFlow", "PyTorch", "Scikit-learn", "Pandas", "NumPy", "OpenCV", "NLP",
+        "Machine Learning", "Deep Learning", "Spark", "Hadoop", "Tableau", "PowerBI"
     ]
     extracted_skills = []
     for sk in known_skills:
         if re.search(rf"\b{re.escape(sk)}\b", resume_text, re.IGNORECASE):
             extracted_skills.append(sk)
-    if not extracted_skills:
-        extracted_skills = ["Python", "FastAPI", "MongoDB", "Docker", "Machine Learning"]
 
-    # 10. Projects
+    # 8. Projects (Dynamic extraction from PROJECTS section)
     projects = []
-    if "msadmit" in text_lower:
-        projects.append("MsAdmit - AI-Powered Admission Competitiveness and Profile Optimizer")
-    if "yuvasetu" in text_lower:
-        projects.append("YuvaSetu - AI-Powered Internship Recommendation Platform")
+    proj_match = re.search(
+        r"(?:^|\n)\s*(?:projects?|technical\s+projects?|academic\s+projects?)\s*[:\n](.*?)(?=\n\s*(?:skills?|technical\s+skills?|education|work\s+experience|experience|awards?|certifications?|publications?|\Z))",
+        resume_text,
+        re.DOTALL | re.IGNORECASE
+    )
+    if proj_match:
+        proj_lines = [pl.strip() for pl in proj_match.group(1).split("\n") if pl.strip()]
+        action_verbs = [
+            "developed", "built", "implemented", "processed", "created", "designed",
+            "engineered", "optimized", "trained", "deployed", "led", "managed",
+            "worked", "spearheaded", "architected", "conducted", "analyzed", "reduced",
+            "increased", "utilized", "leveraged", "integrated", "automated"
+        ]
+        for pl in proj_lines:
+            cleaned_p = re.sub(r"^[-*•·]\s*", "", pl).strip()
+            if 5 <= len(cleaned_p) <= 80 and not any(cleaned_p.lower().startswith(v) for v in action_verbs):
+                title = cleaned_p.split(" - ")[0].split(" | ")[0].split(" : ")[0].strip()
+                if title and len(title) >= 4 and title not in projects:
+                    projects.append(title)
+            if len(projects) >= 4:
+                break
 
-    # 11. Certifications & Awards
+    # 9. Certifications (Dynamic extraction from CERTIFICATIONS section)
     certs = []
-    if "oracle" in text_lower:
-        certs.append("AI Foundations Associate from Oracle")
-    if "neo4j" in text_lower:
-        certs.append("Certified Professional of Neo4J in Data Modeling")
+    cert_match = re.search(
+        r"(?:^|\n)\s*(?:certifications?|licenses?)\s*[:\n](.*?)(?=\n\s*(?:skills?|projects?|education|work\s+experience|awards?|publications?|\Z))",
+        resume_text,
+        re.DOTALL | re.IGNORECASE
+    )
+    if cert_match:
+        cert_lines = [cl.strip() for cl in cert_match.group(1).split("\n") if cl.strip()]
+        for cl in cert_lines:
+            cleaned_c = re.sub(r"^[-*•·]\s*", "", cl).strip()
+            if 5 <= len(cleaned_c) <= 90:
+                certs.append(cleaned_c)
+            if len(certs) >= 4:
+                break
 
+    # 10. Awards (Dynamic extraction from AWARDS section)
     awards = []
-    if "smart india hackathon" in text_lower or "sih" in text_lower:
-        awards.append("Finalist of Smart India Hackathon 2025 (SIH)")
-    if "brainwave" in text_lower:
-        awards.append("Won Brainwave 2.0 Hackathon in DTU (MongoDB category)")
-    if "manthan" in text_lower:
-        awards.append("Finalist in NIT Bhopal Hackathon MANTHAN 1.0")
+    award_match = re.search(
+        r"(?:^|\n)\s*(?:awards?|honors?|achievements?)\s*[:\n](.*?)(?=\n\s*(?:skills?|projects?|education|work\s+experience|certifications?|publications?|\Z))",
+        resume_text,
+        re.DOTALL | re.IGNORECASE
+    )
+    if award_match:
+        award_lines = [al.strip() for al in award_match.group(1).split("\n") if al.strip()]
+        for al in award_lines:
+            cleaned_a = re.sub(r"^[-*•·]\s*", "", al).strip()
+            if 5 <= len(cleaned_a) <= 100:
+                awards.append(cleaned_a)
+            if len(awards) >= 4:
+                break
 
     summary = (
-        f"{name} is a {degree} student at {undergrad} (CGPA {gpa}/10) with {work_months} months of experience "
-        f"in {', '.join(extracted_skills[:3])} and hands-on ML & backend architecture projects."
+        f"{name} is an applicant with a {degree} from {undergrad} "
+        f"(GPA: {gpa}/10, Tier {tier}) with {work_months} months of experience "
+        f"and skills in {', '.join(extracted_skills[:4]) if extracted_skills else 'technology'}."
     )
 
     return {
@@ -860,7 +1005,7 @@ def _fallback_parse_resume(resume_text: str) -> Dict[str, Any]:
         "work_months": work_months,
         "internships_count": intern_count,
         "research_publications": pub_count,
-        "key_skills": extracted_skills[:8],
+        "key_skills": extracted_skills[:12],
         "projects": projects,
         "certifications": certs,
         "awards": awards,

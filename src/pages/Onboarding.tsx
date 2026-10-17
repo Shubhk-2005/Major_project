@@ -81,17 +81,13 @@ export function Onboarding() {
       );
       const parsedResume = resumeDoc?.parsed_data;
 
-      // 2. Merge verified resume metrics with form draft so resume values are not lost
+      // 2. Merge verified resume metrics with form draft (extract work exp, internships, research publications for ML model)
       const finalProfileData = {
         ...draft,
         ...(parsedResume ? {
           workMonths: parsedResume.work_months !== undefined ? Number(parsedResume.work_months) : (parsedResume.work_experience_years ? Math.round(Number(parsedResume.work_experience_years) * 12) : draft.workMonths),
           internships: parsedResume.internships_count !== undefined ? Number(parsedResume.internships_count) : draft.internships,
           publications: parsedResume.research_publications !== undefined ? Number(parsedResume.research_publications) : draft.publications,
-          gpa: parsedResume.gpa && Number(parsedResume.gpa) > 0 ? Number(parsedResume.gpa) : draft.gpa,
-          undergrad: parsedResume.undergrad || draft.undergrad,
-          degree: parsedResume.degree || draft.degree,
-          institutionTier: parsedResume.institution_tier ?? draft.institutionTier
         } : {}),
         isOnboarded: true,
         is_onboarded: true

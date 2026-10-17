@@ -55,9 +55,13 @@ export function RecommendationCard({ item, onOpenBreakdown }: RecommendationCard
         </button>
         <button
           type="button"
-          onClick={() => addApplication(u.id)}
+          onClick={() => addApplication(u.id, u, item.fit.tier, item.fit.fit, item.fit.reasons)}
           disabled={tracked}
-          className="inline-flex items-center gap-1 rounded-sm text-[13px] font-medium text-ink-2 transition-colors duration-150 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:text-ink-3"
+          className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-[13px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
+            tracked
+              ? 'bg-emerald-50 text-emerald-700 font-semibold cursor-default'
+              : 'text-ink-2 hover:bg-black/[0.04] hover:text-ink'
+          }`}
         >
           {tracked ? <CheckIcon className="h-3.5 w-3.5 text-emerald-600" aria-hidden /> : <PlusIcon className="h-3.5 w-3.5" aria-hidden />}
           {tracked ? 'Tracking' : 'Track'}
