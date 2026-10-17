@@ -169,7 +169,11 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       // Fallback to local heuristic if backend is initializing
       score: isOnboarded ? (liveScore ?? computeScore(profile)) : 0,
       factors: isOnboarded ? (liveFactors ?? computeShap(profile)) : [],
-      ranked: isOnboarded ? (liveRanked ?? rankUniversities(profile)) : [],
+      ranked: isOnboarded
+        ? (liveRanked ?? rankUniversities(profile)).filter(
+            (r) => !['india', 'pakistan'].includes((r.university.country || '').trim().toLowerCase())
+          )
+        : [],
       sopDecisions,
       setSopDecisions,
       currentUser,

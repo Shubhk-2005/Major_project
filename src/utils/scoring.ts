@@ -196,7 +196,10 @@ export function computeFit(p: Profile, score: number, u: University): FitResult 
 
 export function rankUniversities(p: Profile, list: University[] = universities): RankedUniversity[] {
   const score = computeScore(p);
-  const evaluated = list.
+  const eligibleList = list.filter(
+    (u) => !['india', 'pakistan'].includes((u.country || '').trim().toLowerCase())
+  );
+  const evaluated = eligibleList.
   map((u) => ({ university: u, fit: computeFit(p, score, u) })).
   sort((a, b) => b.fit.fit - a.fit.fit);
 

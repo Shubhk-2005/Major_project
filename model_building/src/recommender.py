@@ -50,7 +50,10 @@ class PortfolioRecommender:
             self.feature_columns = meta["features"]
 
         self.explainer = AdmissionExplainer()
-        self.uni_list = list(self.catalog.values())
+        self.uni_list = [
+            u for u in self.catalog.values()
+            if str(u.get("country", "")).strip().lower() not in ["india", "pakistan"]
+        ]
 
     def _build_batch_features(self, profile: Dict[str, Any]) -> Tuple[np.ndarray, List[Dict[str, Any]]]:
         """Construct a vectorized 2D feature matrix for the applicant across all universities."""

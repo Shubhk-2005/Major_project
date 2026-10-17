@@ -501,18 +501,6 @@ UNIVERSITY_METADATA: Dict[str, Dict[str, Any]] = {
         "city": "Taipei", "country": "Taiwan", "program": "MS in Computer Science & Information Engineering",
         "tuition": 5000.0, "living": 10000.0, "deadline": "2027-02-15"
     },
-    "indian institute of technology bombay": {
-        "city": "Mumbai", "country": "India", "program": "M.Tech in Computer Science & Engineering",
-        "tuition": 3500.0, "living": 4000.0, "deadline": "2027-04-15"
-    },
-    "indian institute of technology delhi": {
-        "city": "New Delhi", "country": "India", "program": "M.Tech in Computer Science & Engineering",
-        "tuition": 3500.0, "living": 4000.0, "deadline": "2027-04-15"
-    },
-    "indian institute of science bangalore": {
-        "city": "Bangalore", "country": "India", "program": "M.Tech in Computer Science & Engineering",
-        "tuition": 3000.0, "living": 4000.0, "deadline": "2027-04-15"
-    },
     "trinity college dublin": {
         "city": "Dublin", "country": "Ireland", "program": "MSc in Computer Science",
         "tuition": 28000.0, "living": 18000.0, "deadline": "2027-03-31"
@@ -565,6 +553,10 @@ def format_ranked_universities(portfolio: Dict[str, Any]) -> List[Dict[str, Any]
         # Sort each tier strictly descending by fit_score so top matches come first
         unis = sorted(unis, key=lambda x: float(x.get("fit_score", 0.0)), reverse=True)
         for u in unis:
+            country_val = str(u.get("country", "")).strip().lower()
+            if country_val in ["india", "pakistan"]:
+                continue
+
             strengths = u.get("top_strengths", [])
             bottlenecks = u.get("top_bottlenecks", [])
 
