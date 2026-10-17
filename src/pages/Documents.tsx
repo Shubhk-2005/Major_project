@@ -18,7 +18,7 @@ export function Documents() {
 
   return (
     <div>
-      <PageHeader title="Documents" description="Every file you’ve uploaded, plus line-level feedback on your statement of purpose that feeds straight into your score." />
+      <PageHeader title="Documents" description="Every file you’ve uploaded, plus comprehensive 8-criteria Statement of Purpose evaluation powered by Ms AI." />
       <div role="tablist" aria-label="Documents" className="mt-8 flex gap-6 border-b border-line">
         {tabs.map((t) =>
         <button

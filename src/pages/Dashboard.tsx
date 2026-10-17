@@ -10,12 +10,11 @@ import { useApplications } from '../contexts/ApplicationsContext';
 import { useCountUp } from '../hooks/useCountUp';
 import { roadmapItems } from '../data/roadmap';
 import { universities } from '../data/universities';
-import { sopSegments } from '../data/sop';
 import { BASELINE, countTiers, scoreDelta } from '../utils/scoring';
 import { daysUntil, formatSigned } from '../utils/format';
 
 export function Dashboard() {
-  const { profile, score, factors, ranked, sopDecisions, isOnboarded } = useProfile();
+  const { profile, score, factors, ranked, isOnboarded } = useProfile();
   const { applications } = useApplications();
   const display = useCountUp(score);
   const counts = countTiers(ranked);
@@ -38,7 +37,6 @@ export function Dashboard() {
     }))
     .sort((x, y) => x.days - y.days)[0];
 
-  const openSuggestions = sopSegments.filter((s) => s.suggestion && !sopDecisions[s.id]).length;
   const topMatches = [...ranked].sort((a, b) => b.fit.fit - a.fit.fit).slice(0, 3);
 
   const modules = [
@@ -51,8 +49,8 @@ export function Dashboard() {
       label: 'Documents & SOP feedback',
       summary:
         profile.sopQuality && profile.sopQuality !== 60
-          ? `SOP scored ${Math.round(profile.sopQuality)}/100 · ${openSuggestions} suggestion${openSuggestions === 1 ? '' : 's'} open`
-          : 'Upload draft SOP for 8-criteria critique & line review powered by Ms AI'
+          ? `SOP scored ${Math.round(profile.sopQuality)}/100 · Evaluated by Ms AI`
+          : 'Upload draft SOP for 8-criteria critique powered by Ms AI'
     }
   ];
 
