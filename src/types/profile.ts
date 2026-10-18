@@ -11,6 +11,8 @@ export interface Profile {
   gpa: number;
   gre: number;
   toefl: number;
+  englishTestType?: 'toefl' | 'ielts';
+  ieltsScore?: number;
   publications: number;
   workMonths: number;
   internships: number;
@@ -28,6 +30,8 @@ export interface ProfileForm {
   gpa: string;
   gre: string;
   toefl: string;
+  englishTestType: 'toefl' | 'ielts';
+  ieltsScore: string;
   publications: string;
   workMonths: string;
   internships: string;

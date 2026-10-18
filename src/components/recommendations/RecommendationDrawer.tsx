@@ -253,12 +253,18 @@ export function RecommendationDrawer({ item, onClose }: RecommendationDrawerProp
                     )}
                   </div>
 
-                  {/* TOEFL Box */}
+                  {/* TOEFL / IELTS Box */}
                   <div className="rounded-lg border border-line bg-white p-3.5 shadow-2xs">
-                    <span className="text-[11px] font-medium text-ink-3 uppercase tracking-wider">TOEFL iBT</span>
+                    <span className="text-[11px] font-medium text-ink-3 uppercase tracking-wider">
+                      {profile.englishTestType === 'ielts' ? 'IELTS (TOEFL Eq.)' : 'TOEFL iBT'}
+                    </span>
                     <div className="mt-1.5 flex items-baseline justify-between">
                       <span className="font-mono text-[16px] font-bold text-ink">
-                        {profile.toefl > 0 ? profile.toefl : '--'}
+                        {profile.englishTestType === 'ielts' && profile.ieltsScore
+                          ? `${profile.ieltsScore} (${profile.toefl})`
+                          : profile.toefl > 0
+                          ? profile.toefl
+                          : '--'}
                       </span>
                       <span className="text-[12px] text-ink-3 font-mono">Min: {u.avgToefl || 100}</span>
                     </div>

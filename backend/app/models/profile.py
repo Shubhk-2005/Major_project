@@ -20,6 +20,8 @@ class UserProfile(Base):
     gpa = Column(Float, default=8.4)
     gre = Column(Float, default=320.0)
     toefl = Column(Float, default=108.0)
+    english_test_type = Column(String(20), default="toefl")
+    ielts_score = Column(Float, nullable=True)
     publications = Column(Integer, default=1)
     work_months = Column(Integer, default=12)
     internships = Column(Integer, default=2)

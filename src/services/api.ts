@@ -49,6 +49,8 @@ export const api = {
         gpa: data.gpa !== undefined && data.gpa !== null ? Number(data.gpa) : 0,
         gre: data.gre !== undefined && data.gre !== null ? Number(data.gre) : 0,
         toefl: data.toefl !== undefined && data.toefl !== null ? Number(data.toefl) : 0,
+        englishTestType: data.english_test_type || (data.ielts_score ? "ielts" : "toefl"),
+        ieltsScore: data.ielts_score !== undefined && data.ielts_score !== null ? Number(data.ielts_score) : undefined,
         publications: data.publications !== undefined && data.publications !== null ? Number(data.publications) : 0,
         workMonths: data.work_months !== undefined && data.work_months !== null ? Number(data.work_months) : 0,
         internships: data.internships !== undefined && data.internships !== null ? Number(data.internships) : 0,
@@ -76,6 +78,8 @@ export const api = {
       if (patch.gpa !== undefined) payload.gpa = patch.gpa;
       if (patch.gre !== undefined) payload.gre = patch.gre;
       if (patch.toefl !== undefined) payload.toefl = patch.toefl;
+      if (patch.englishTestType !== undefined) payload.english_test_type = patch.englishTestType;
+      if (patch.ieltsScore !== undefined) payload.ielts_score = patch.ieltsScore;
       if (patch.publications !== undefined) payload.publications = patch.publications;
       if (patch.workMonths !== undefined) payload.work_months = patch.workMonths;
       if (patch.internships !== undefined) payload.internships = patch.internships;

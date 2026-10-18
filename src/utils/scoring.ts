@@ -60,13 +60,18 @@ export function computeShap(p: Profile): ShapFactor[] {
   },
   {
     key: 'toefl',
-    label: 'TOEFL',
-    value: toeflVal > 0 ? `${toeflVal}` : 'Not taken',
+    label: p.englishTestType === 'ielts' ? 'IELTS (TOEFL eq.)' : 'TOEFL',
+    value:
+      p.englishTestType === 'ielts' && p.ieltsScore
+        ? `Band ${p.ieltsScore} (${toeflVal})`
+        : toeflVal > 0
+        ? `${toeflVal}`
+        : 'Not taken',
     contribution: toefl,
     explanation:
-    toefl >= 0 ?
-    'Clears every program minimum with room to spare.' :
-    'Close to the 100 cutoff several programs enforce.'
+      toefl >= 0
+        ? 'Clears every program minimum with room to spare.'
+        : 'Close to the 100 cutoff several programs enforce.'
   },
   {
     key: 'work',

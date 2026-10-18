@@ -33,8 +33,11 @@ export function StepReview({ draft, files, existingDocs, onEdit }: StepReviewPro
     title: 'Tests',
     step: 1,
     rows: [
-    ['GRE', `${draft.gre} / 340`],
-    ['TOEFL', `${draft.toefl} / 120`]]
+      ['GRE', `${draft.gre} / 340`],
+      draft.englishTestType === 'ielts' && draft.ieltsScore
+        ? ['IELTS', `${draft.ieltsScore} / 9.0 (TOEFL eq. ${draft.toefl})`]
+        : ['TOEFL', `${draft.toefl} / 120`]
+    ]
 
   },
   {

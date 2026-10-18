@@ -12,6 +12,8 @@ class ProfileBase(BaseModel):
     gpa: float = Field(default=0.0, ge=0.0, le=10.0)
     gre: float = Field(default=0.0, ge=0.0, le=340.0)
     toefl: float = Field(default=0.0, ge=0.0, le=120.0)
+    english_test_type: Optional[str] = "toefl"
+    ielts_score: Optional[float] = Field(default=None, ge=0.0, le=9.0)
     publications: int = Field(default=0, ge=0)
     work_months: int = Field(default=0, ge=0)
     internships: int = Field(default=0, ge=0)
@@ -33,6 +35,8 @@ class ProfileUpdate(BaseModel):
     gpa: Optional[float] = Field(default=None, ge=0.0, le=10.0)
     gre: Optional[float] = Field(default=None, ge=0.0, le=340.0)
     toefl: Optional[float] = Field(default=None, ge=0.0, le=120.0)
+    english_test_type: Optional[str] = None
+    ielts_score: Optional[float] = Field(default=None, ge=0.0, le=9.0)
     publications: Optional[int] = Field(default=None, ge=0)
     work_months: Optional[int] = Field(default=None, ge=0)
     internships: Optional[int] = Field(default=None, ge=0)
