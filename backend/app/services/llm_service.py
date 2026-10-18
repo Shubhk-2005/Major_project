@@ -449,24 +449,31 @@ def synthesize_smart_roadmap(profile_data: Dict[str, Any], target_unis: Optional
         "expected_score_lift": "+4 to +5 percentile points"
     })
 
-    # Priority 5: Technical Portfolio
-    if work < 12:
-        priorities.append({
-            "area": "Open Source & Systems Portfolio",
-            "action_item": "Publish a well-documented open-source backend/AI system on GitHub with performance benchmarks and live demo.",
-            "timeline": "Months 1-4",
-            "expected_score_lift": "+3 to +5 percentile points"
-        })
+    # Priority 5: Application Submissions
+    priorities.append({
+        "area": "Application Rounds & Priority Deadlines",
+        "action_item": f"Submit early applications to {primary_uni} and matched target programs by priority cutoffs to maximize merit scholarship consideration.",
+        "timeline": "Months 7-9",
+        "expected_score_lift": "+5 to +8 percentile points"
+    })
+
+    # Priority 6: Post-Submission & Assistantships
+    priorities.append({
+        "area": "Interviews, GRA/GTA & Funding Outreach",
+        "action_item": f"Reach out to faculty lab directors at {primary_uni} for Graduate Research Assistantships (GRA) and prepare for departmental technical interviews.",
+        "timeline": "Months 9-12",
+        "expected_score_lift": "+3 to +5 percentile points"
+    })
 
     advice = (
-        f"Publishing a verifiable research preprint before program deadlines is your most impactful lever to convert applications from Consider to Target at {primary_uni}."
+        f"Publishing a verifiable research preprint in Months 1-4 is your single highest-leverage milestone to convert applications into funded offers at {primary_uni}."
         if pubs == 0 else
         f"Explicit faculty-level research alignment in your SOP and CV will deliver the highest conversion lift at {primary_uni}."
     )
 
     return {
         "overview": overview,
-        "suggested_timeline_months": 6,
+        "suggested_timeline_months": 12,
         "executive_advice": advice,
         "key_priorities": priorities
     }
@@ -476,7 +483,7 @@ def generate_admission_roadmap(
     profile_data: Dict[str, Any],
     target_unis: List[str]
 ) -> Dict[str, Any]:
-    """Generate strategic step-by-step optimization roadmap using Gemini with fast synthesis fallback."""
+    """Generate strategic 12-month step-by-step optimization roadmap using Gemini with fast synthesis fallback."""
     import urllib.request
 
     if not settings.GEMINI_API_KEY:
@@ -486,16 +493,22 @@ def generate_admission_roadmap(
 Applicant: GPA {profile_data.get('gpa', 8.4)}, GRE {profile_data.get('gre', 320)}, TOEFL {profile_data.get('toefl', 108)}, Pubs {profile_data.get('publications', 0)}, Work Months {profile_data.get('work_months', 0)}.
 Target Universities: {', '.join(target_unis) if target_unis else 'Top US CS Programs'}.
 
+Generate a comprehensive 12-Month Master's Admissions Strategic Roadmap covering 4 key phases:
+1) Foundation & Bottleneck Elimination (Months 1-4: GRE/TOEFL, Capstone preprint, research)
+2) Application & Essay Specialization (Months 4-7: Faculty-tailored SOP, LOR dossiers)
+3) Submission Rounds (Months 7-9: Target & Reach application priority deadlines)
+4) Conversion & Funding (Months 9-12: Faculty lab interviews, GRA/GTA assistantships, visa, enrollment)
+
 Return ONLY a valid JSON object:
 {{
-  "overview": "1-2 sentence diagnosis of applicant profile and bottlenecks",
-  "suggested_timeline_months": 6,
-  "executive_advice": "Single highest ROI recommendation",
+  "overview": "1-2 sentence diagnosis of applicant profile and 12-month strategic path",
+  "suggested_timeline_months": 12,
+  "executive_advice": "Single highest ROI recommendation across the 12-month journey",
   "key_priorities": [
     {{
-      "area": "Research / GRE / SOP / Work",
+      "area": "Research / GRE / SOP / Submissions / Assistantships",
       "action_item": "Specific concrete task",
-      "timeline": "Month 1-2",
+      "timeline": "Months 1-3",
       "expected_score_lift": "+5 percentile points"
     }}
   ]

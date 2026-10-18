@@ -199,40 +199,13 @@ export function rankUniversities(p: Profile, list: University[] = universities):
   const eligibleList = list.filter(
     (u) => !['india', 'pakistan'].includes((u.country || '').trim().toLowerCase())
   );
-  const evaluated = eligibleList.
-  map((u) => ({ university: u, fit: computeFit(p, score, u) })).
-  sort((a, b) => b.fit.fit - a.fit.fit);
-
-  const targets = evaluated.filter((r) => r.fit.tier === 'target');
-  const considers = evaluated.filter((r) => r.fit.tier === 'consider');
-
-  // Dynamic portfolio balancing: If rigid thresholds leave target or consider empty (e.g. lower/higher score),
-  // guarantee that the user always gets Target (best matches), Consider (attainable), and Reach (dream).
-  if (targets.length < 3 || considers.length < 3) {
-    const total = evaluated.length;
-    const targetCount = Math.max(3, Math.floor(total * 0.35));
-    const considerCount = Math.max(3, Math.floor(total * 0.35));
-
-    return evaluated.map((item, idx) => {
-      let tier: Tier = 'reach';
-      if (idx < targetCount) {
-        tier = 'target';
-      } else if (idx < targetCount + considerCount) {
-        tier = 'consider';
-      } else {
-        tier = 'reach';
-      }
-      return {
-        ...item,
-        fit: {
-          ...item.fit,
-          tier
-        }
-      };
+  return eligibleList
+    .map((u) => ({ university: u, fit: computeFit(p, score, u) }))
+    .sort((a, b) => {
+      const diff = b.fit.fit - a.fit.fit;
+      if (diff !== 0) return diff;
+      return a.university.rank - b.university.rank;
     });
-  }
-
-  return evaluated;
 }
 
 export function countTiers(ranked: RankedUniversity[]): Record<Tier, number> {

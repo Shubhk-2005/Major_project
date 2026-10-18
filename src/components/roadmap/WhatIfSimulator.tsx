@@ -90,49 +90,116 @@ export function WhatIfSimulator({ base, sim, currentScore, onChange, onReset }: 
             <span className="font-mono text-[52px] font-medium leading-none tracking-[-0.04em] tabular-nums" aria-live="polite">
               {display}
             </span>
-            <span className={`mt-1 font-mono text-[13px] tabular-nums ${delta > 0 ? 'text-accent' : 'text-ink-3'}`}>{delta === 0 ? 'no change' : `${formatSigned(delta, 0)} vs. now`}</span>
+            <span className={`mt-1 font-mono text-[13px] tabular-nums ${delta > 0 ? 'text-accent font-semibold' : 'text-ink-3'}`}>
+              {delta === 0 ? 'Current Profile Score' : `${formatSigned(delta, 0)} pts with simulation`}
+            </span>
           </ScoreGauge>
           <div className="min-w-[220px] flex-1">
-            <p className="text-[12px] text-ink-3">Tier distribution</p>
-            <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-line" aria-hidden>
+            <div className="flex items-center justify-between">
+              <p className="text-[12px] font-semibold text-ink-3 uppercase tracking-wider">Simulated Portfolio</p>
+              <span className="text-[11px] text-ink-3">Total: {total} Programs</span>
+            </div>
+            <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-line" aria-hidden>
               {tierOrder.map((t) =>
               <motion.div key={t} className={tierSolid[t]} initial={false} animate={{ width: `${simCounts[t] / total * 100}%` }} transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }} />
               )}
             </div>
-            <dl className="mt-4 grid grid-cols-3 gap-4">
+            <dl className="mt-4 grid grid-cols-3 gap-3">
               {tierOrder.map((t) => {
                 const d = simCounts[t] - baseCounts[t];
                 return (
-                  <div key={t}>
-                    <dt className={`text-[12px] ${tierText[t]}`}>{tierLabel[t]}</dt>
-                    <dd className="font-mono text-[24px] leading-tight tabular-nums">
+                  <div key={t} className="rounded-lg border border-line bg-canvas/40 p-2.5 text-center">
+                    <dt className={`text-[12px] font-semibold ${tierText[t]}`}>{tierLabel[t]}</dt>
+                    <dd className="mt-1 font-mono text-[22px] font-bold leading-tight tabular-nums text-ink">
                       {simCounts[t]}
-                      {d !== 0 && <span className="ml-1.5 text-[12px] text-ink-3">{formatSigned(d, 0)}</span>}
+                      {d !== 0 && (
+                        <span className={`ml-1 text-[12px] font-semibold ${d > 0 ? 'text-emerald-600' : 'text-ink-3'}`}>
+                          {formatSigned(d, 0)}
+                        </span>
+                      )}
                     </dd>
+                    <span className="text-[10px] text-ink-3 block mt-0.5">
+                      {t === 'target' ? 'Safe Match' : t === 'consider' ? 'Competitive' : 'Ambitious'}
+                    </span>
                   </div>);
-
               })}
             </dl>
           </div>
         </div>
 
         <div className="mt-8 border-t border-line pt-6">
-          <p className="text-[13px] font-medium">Tier changes</p>
-          {changes.length === 0 ?
-          <p className="mt-2 text-[14px] text-ink-3">Move a slider to see which programs change tier.</p> :
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+            <h3 className="font-display text-[16px] font-semibold tracking-[-0.02em] text-ink">
+              University Tier Movements
+            </h3>
+            <span className="text-[12px] text-ink-3">
+              Programs upgrading tier (Reach → Consider → Target) based on simulated scores
+            </span>
+          </div>
 
-          <ul className="mt-3 divide-y divide-line">
-              {changes.slice(0, 7).map(({ n, o }) =>
-            <li key={n.university.id} className="flex flex-wrap items-center gap-2 py-2.5 text-[14px]">
-                  <span className="min-w-0 flex-1 truncate">{n.university.name}</span>
-                  {o && <TierBadge tier={o.fit.tier} fit={o.fit.fit} />}
-                  <ArrowRightIcon className={`h-3.5 w-3.5 ${o && tierRank(n.fit.tier) < tierRank(o.fit.tier) ? 'text-accent' : 'text-ink-3'}`} aria-hidden />
-                  <TierBadge tier={n.fit.tier} fit={n.fit.fit} />
-                </li>
-            )}
-              {changes.length > 7 && <li className="py-2.5 text-[13px] text-ink-3">and {changes.length - 7} more</li>}
-            </ul>
-          }
+          {changes.length === 0 ? (
+            <div className="mt-3 rounded-xl border border-line bg-canvas/60 p-4 text-[13px] text-ink-2">
+              <p className="font-medium text-ink">Adjust sliders to test program upgrades</p>
+              <p className="mt-1 text-ink-3">
+                Slide your GRE, GPA, or publications on the left. Any university that improves its admission tier based on your new score will be listed here.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between text-[11.5px] uppercase tracking-wider font-semibold text-ink-3 px-1">
+                <span>University Program</span>
+                <span className="text-right">Tier & Fit Transition</span>
+              </div>
+              <ul className="divide-y divide-line rounded-xl border border-line bg-white shadow-2xs">
+                {changes.slice(0, 7).map(({ n, o }) => {
+                  const isPromotion = o && tierRank(n.fit.tier) < tierRank(o.fit.tier);
+                  const fitDiff = o ? n.fit.fit - o.fit.fit : 0;
+                  return (
+                    <li
+                      key={n.university.id}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 p-3.5 transition-colors hover:bg-canvas/50"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate text-[14px] font-semibold text-ink">
+                            {n.university.name}
+                          </span>
+                          <span className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[11px] font-medium text-ink-3">
+                            Rank #{n.university.rank}
+                          </span>
+                          {n.university.country && (
+                            <span className="text-[12px] text-ink-3">· {n.university.country}</span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-[12.5px] text-ink-2">
+                          Admission probability shifts from{' '}
+                          <span className="font-mono font-medium">{o?.fit.fit}%</span> to{' '}
+                          <span className="font-mono font-medium text-ink">{n.fit.fit}%</span>{' '}
+                          {fitDiff > 0 && (
+                            <span className="text-accent font-semibold">(+{fitDiff}%)</span>
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                        {o && <TierBadge tier={o.fit.tier} fit={o.fit.fit} />}
+                        <ArrowRightIcon
+                          className={`h-4 w-4 ${isPromotion ? 'text-accent' : 'text-ink-3'}`}
+                          aria-hidden
+                        />
+                        <TierBadge tier={n.fit.tier} fit={n.fit.fit} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              {changes.length > 7 && (
+                <p className="pt-1 text-center text-[12.5px] text-ink-3">
+                  + {changes.length - 7} more universities improved their tier
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </section>);

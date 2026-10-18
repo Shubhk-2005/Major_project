@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { QsUniversity } from '../../data/qsUniversities';
+import { useProfile } from '../../contexts/ProfileContext';
 
 interface QsUniversityDrawerProps {
   item: QsUniversity | null;
@@ -30,6 +31,7 @@ interface QsUniversityDrawerProps {
 }
 
 export function QsUniversityDrawer({ item, onClose }: QsUniversityDrawerProps) {
+  const { currentUser } = useProfile();
   const reduce = useReducedMotion();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [copied, setCopied] = useState(false);
@@ -476,8 +478,9 @@ export function QsUniversityDrawer({ item, onClose }: QsUniversityDrawerProps) {
                   Antigravity simulates your admission readiness score for {item.name} based on your GPA, GRE, publications, and professional background.
                 </p>
                 <div className="mt-4 flex gap-2">
-                  <Button to="/app/recommendations" size="sm" className="w-full">
-                    View in Recommendations <ArrowRightIcon className="h-3.5 w-3.5" />
+                  <Button to={currentUser ? '/app/recommendations' : '/signup'} size="sm" className="w-full">
+                    {currentUser ? 'View in Recommendations' : 'Calculate My Chances'}{' '}
+                    <ArrowRightIcon className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>

@@ -5,7 +5,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { TierBadge } from '../components/ui/TierBadge';
 import { RecommendationCard } from '../components/recommendations/RecommendationCard';
 import { useProfile } from '../contexts/ProfileContext';
-import { roadmapItems } from '../data/roadmap';
+import { getDynamicRoadmapItems } from '../utils/roadmapGenerator';
 import { applyLever, computeScore, countTiers, rankUniversities, tierRank } from '../utils/scoring';
 import { tierDefinition, tierLabel, tierOrder, tierSolid, tierText } from '../utils/tiers';
 import { Tier, RankedUniversity } from '../types/university';
@@ -23,7 +23,8 @@ export function Recommendations() {
   const [selectedUni, setSelectedUni] = useState<RankedUniversity | null>(null);
 
   const unlock = useMemo(() => {
-    const high = roadmapItems.filter((r) => r.priority === 'high' && r.lever);
+    const dynItems = getDynamicRoadmapItems(profile, ranked);
+    const high = dynItems.filter((r) => r.priority === 'high' && r.lever);
     const boosted = high.reduce((p, r) => applyLever(p, r.lever ?? {}), profile);
     const boostedRanked = rankUniversities(boosted);
     const moves = boostedRanked.

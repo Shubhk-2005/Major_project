@@ -12,6 +12,7 @@ export function Roadmap() {
   const { profile, score, ranked } = useProfile();
   const [sim, setSim] = useState<Profile>(profile);
   const [activeTab, setActiveTab] = useState<'advisory' | 'timeline' | 'both'>('advisory');
+  const [aiStrategy, setAiStrategy] = useState<any>(null);
 
   useEffect(() => {
     setSim(profile);
@@ -98,11 +99,11 @@ export function Roadmap() {
         </div>
 
         {(activeTab === 'advisory' || activeTab === 'both') && (
-          <AiRoadmapAdvisory profile={profile} ranked={ranked} />
+          <AiRoadmapAdvisory profile={profile} ranked={ranked} onStrategyLoaded={setAiStrategy} />
         )}
 
         {(activeTab === 'timeline' || activeTab === 'both') && (
-          <RoadmapTimeline base={profile} onSimulate={simulate} />
+          <RoadmapTimeline base={profile} ranked={ranked} aiStrategy={aiStrategy} onSimulate={simulate} />
         )}
       </section>
     </div>

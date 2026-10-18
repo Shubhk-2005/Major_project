@@ -1,16 +1,21 @@
 import React from 'react';
 import { Profile } from '../../types/profile';
-import { UploadedFile } from '../../types/document';
+import { UploadedFile, VaultDocument } from '../../types/document';
 import { UploadKey } from './StepDocuments';
 import { computeScore } from '../../utils/scoring';
 
 interface StepReviewProps {
   draft: Profile;
   files: Record<UploadKey, UploadedFile[]>;
+  existingDocs?: Record<UploadKey, VaultDocument[]>;
   onEdit: (step: number) => void;
 }
 
-export function StepReview({ draft, files, onEdit }: StepReviewProps) {
+export function StepReview({ draft, files, existingDocs, onEdit }: StepReviewProps) {
+  const resumeName = files.resume[0]?.name || existingDocs?.resume?.[0]?.name;
+  const sopName = files.sop[0]?.name || existingDocs?.sop?.[0]?.name;
+  const totalLors = files.lor.length + (existingDocs?.lor?.length || 0);
+
   const sections = [
   {
     title: 'Academic',
@@ -36,9 +41,9 @@ export function StepReview({ draft, files, onEdit }: StepReviewProps) {
     title: 'Documents',
     step: 2,
     rows: [
-      ['Resume', files.resume[0]?.name ?? 'Not uploaded'],
-      ['SOP', files.sop[0]?.name ?? 'Not uploaded'],
-      ['LORs', files.lor.length ? `${files.lor.length} file${files.lor.length > 1 ? 's' : ''}` : 'Not uploaded']
+      ['Resume', resumeName ? `${resumeName}${!files.resume[0] ? ' (saved)' : ''}` : 'Not uploaded'],
+      ['SOP', sopName ? `${sopName}${!files.sop[0] ? ' (saved)' : ''}` : 'Not uploaded'],
+      ['LORs', totalLors ? `${totalLors} file${totalLors > 1 ? 's' : ''}` : 'Not uploaded']
     ]
   }];
 

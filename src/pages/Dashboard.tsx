@@ -8,7 +8,7 @@ import { FitReasons } from '../components/ui/FitReasons';
 import { useProfile } from '../contexts/ProfileContext';
 import { useApplications } from '../contexts/ApplicationsContext';
 import { useCountUp } from '../hooks/useCountUp';
-import { roadmapItems } from '../data/roadmap';
+import { getDynamicRoadmapItems } from '../utils/roadmapGenerator';
 import { universities } from '../data/universities';
 import { BASELINE, countTiers, scoreDelta } from '../utils/scoring';
 import { daysUntil, formatSigned } from '../utils/format';
@@ -22,10 +22,12 @@ export function Dashboard() {
   const adding = factors.filter((f) => f.contribution > 0).reduce((a, f) => a + f.contribution, 0);
   const costing = factors.filter((f) => f.contribution < 0).reduce((a, f) => a + f.contribution, 0);
 
-  const levers = roadmapItems
-    .filter((r) => r.lever)
-    .map((r) => ({ item: r, delta: scoreDelta(profile, r.lever ?? {}) }))
-    .sort((a, b) => b.delta - a.delta);
+  const levers = React.useMemo(() => {
+    return getDynamicRoadmapItems(profile, ranked)
+      .filter((r) => r.lever)
+      .map((r) => ({ item: r, delta: scoreDelta(profile, r.lever ?? {}) }))
+      .sort((a, b) => b.delta - a.delta);
+  }, [profile, ranked]);
   const topLever = levers[0];
 
   const upcoming = applications

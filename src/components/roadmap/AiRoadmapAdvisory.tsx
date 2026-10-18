@@ -8,9 +8,10 @@ import { api } from '../../services/api';
 interface AiRoadmapAdvisoryProps {
   profile: Profile;
   ranked: RankedUniversity[];
+  onStrategyLoaded?: (strategy: any) => void;
 }
 
-export function AiRoadmapAdvisory({ profile, ranked }: AiRoadmapAdvisoryProps) {
+export function AiRoadmapAdvisory({ profile, ranked, onStrategyLoaded }: AiRoadmapAdvisoryProps) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,34 +30,55 @@ export function AiRoadmapAdvisory({ profile, ranked }: AiRoadmapAdvisoryProps) {
         targetUniversities: topUnis.length > 0 ? topUnis : undefined
       });
       setData(res);
+      onStrategyLoaded?.(res);
     } catch (err: any) {
       console.warn('AI Roadmap fetch failed:', err);
       const topUnis = ranked.slice(0, 3).map((r) => r.university.name);
-      setData({
-        overview: `Strategic admissions plan targeting ${topUnis[0] || 'Top Graduate CS Programs'}. Key priorities focus on eliminating profile bottlenecks in research and statement alignment.`,
-        suggested_timeline_months: 6,
-        executive_advice: `Securing a research artifact and tailoring your statement to specific faculty agendas will move the needle most at ${topUnis[0] || 'target programs'}.`,
+      const fallbackData = {
+        overview: `Comprehensive 12-month strategic admissions plan targeting ${topUnis[0] || 'Top Graduate CS Programs'}. Systematically balances early profile strengthening with specialized faculty alignment and post-submission funding outreach.`,
+        suggested_timeline_months: 12,
+        executive_advice: `Publishing a verifiable capstone preprint in Months 1-4 and securing faculty-aligned recommendations will move the needle most at ${topUnis[0] || 'target programs'}.`,
         key_priorities: [
           {
-            area: "Research & Preprints",
+            area: "Research & Workshop Preprints",
             action_item: "Deposit a capstone research benchmark or paper on arXiv / student workshop.",
             timeline: "Months 1-3",
-            expected_score_lift: "+8 percentile lift"
+            expected_score_lift: "+8 to +10 percentile lift"
+          },
+          {
+            area: "GRE Quant Maximization",
+            action_item: "Complete targeted quantitative sectional timed tests aiming for 167+ (90th percentile).",
+            timeline: "Months 2-4",
+            expected_score_lift: "+5 to +7 percentile lift"
           },
           {
             area: "SOP Faculty Alignment",
             action_item: `Name 2 specific professors and cite their recent work in your Statement of Purpose for ${topUnis[0] || 'target universities'}.`,
-            timeline: "Months 3-4",
-            expected_score_lift: "+6 percentile lift"
+            timeline: "Months 4-6",
+            expected_score_lift: "+6 to +8 percentile lift"
           },
           {
             area: "Letters of Recommendation",
             action_item: "Provide 3 recommenders with bulleted dossiers highlighting problem-solving and independence.",
-            timeline: "Months 4-5",
-            expected_score_lift: "+4 percentile lift"
+            timeline: "Months 5-7",
+            expected_score_lift: "+4 to +5 percentile lift"
+          },
+          {
+            area: "Application Priority Submissions",
+            action_item: `Submit early applications to ${topUnis.slice(0, 2).join(', ') || 'target programs'} before priority cutoffs to maximize merit scholarship consideration.`,
+            timeline: "Months 7-9",
+            expected_score_lift: "+5 to +8 percentile lift"
+          },
+          {
+            area: "Interviews & Assistantship Funding",
+            action_item: "Reach out to faculty lab directors for Graduate Research Assistantships (GRA) and prepare for departmental technical interviews.",
+            timeline: "Months 9-12",
+            expected_score_lift: "+4 to +6 percentile lift"
           }
         ]
-      });
+      };
+      setData(fallbackData);
+      onStrategyLoaded?.(fallbackData);
     } finally {
       setLoading(false);
     }
@@ -142,13 +164,13 @@ export function AiRoadmapAdvisory({ profile, ranked }: AiRoadmapAdvisoryProps) {
                 </p>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className="font-mono text-[32px] font-semibold text-ink tabular-nums">
-                    {data.suggested_timeline_months || 6}
+                    {data.suggested_timeline_months || 12}
                   </span>
-                  <span className="text-[14px] text-ink-3">months to deadline</span>
+                  <span className="text-[14px] text-ink-3">month roadmap cycle</span>
                 </div>
               </div>
               <p className="mt-2 text-[12px] text-ink-3 leading-snug">
-                Optimized for Fall 2026 intake decision cycles.
+                Unified across profile building, submissions & funding.
               </p>
             </div>
           </div>

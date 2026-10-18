@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Logo } from '../components/ui/Logo';
@@ -11,7 +11,8 @@ import { StepReview } from '../components/onboarding/StepReview';
 import { useProfile } from '../contexts/ProfileContext';
 import { FormErrors, fromForm, toForm, validateStep } from '../utils/profileForm';
 import { ProfileForm } from '../types/profile';
-import { UploadedFile } from '../types/document';
+import { UploadedFile, VaultDocument } from '../types/document';
+import { api } from '../services/api';
 
 const steps = ['Academic', 'Test scores', 'Documents', 'Review'] as const;
 const intros = [
@@ -20,13 +21,10 @@ const intros = [
 { title: 'Upload documents', body: 'Your SOP and letters are scored for specificity and program fit.' },
 { title: 'Review and submit', body: 'Check everything once. You can edit your profile anytime.' }];
 
-
-import { api } from '../services/api';
-
 export function Onboarding() {
   const navigate = useNavigate();
   const reduce = useReducedMotion();
-  const { profile, updateProfile, refreshProfile, setProfile } = useProfile();
+  const { profile, updateProfile, refreshProfile } = useProfile();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<ProfileForm>(() => toForm(profile));
   const [errors, setErrors] = useState<FormErrors>({});
@@ -35,7 +33,66 @@ export function Onboarding() {
     sop: [],
     lor: []
   });
+  const [existingDocs, setExistingDocs] = useState<Record<UploadKey, VaultDocument[]>>({
+    resume: [],
+    sop: [],
+    lor: []
+  });
+  const [loadingExisting, setLoadingExisting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadVaultDocuments() {
+      setLoadingExisting(true);
+      try {
+        const docs = await api.listDocuments();
+        if (!isMounted) return;
+        const grouped: Record<UploadKey, VaultDocument[]> = {
+          resume: [],
+          sop: [],
+          lor: []
+        };
+        for (const d of docs) {
+          const kind = (d.kind || '').toLowerCase();
+          if (kind === 'resume' || (d.name && d.name.toLowerCase().includes('resume'))) {
+            grouped.resume.push(d);
+          } else if (kind === 'sop' || (d.name && d.name.toLowerCase().includes('sop'))) {
+            grouped.sop.push(d);
+          } else if (kind === 'lor' || (d.name && d.name.toLowerCase().includes('lor'))) {
+            grouped.lor.push(d);
+          }
+        }
+        setExistingDocs(grouped);
+      } catch (err) {
+        console.warn('Could not load vault documents:', err);
+      } finally {
+        if (isMounted) setLoadingExisting(false);
+      }
+    }
+    loadVaultDocuments();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleDeleteExistingDoc = async (docId: string, key: UploadKey) => {
+    setDeletingId(docId);
+    try {
+      const ok = await api.deleteDocument(docId);
+      if (ok) {
+        setExistingDocs((prev) => ({
+          ...prev,
+          [key]: prev[key].filter((d) => d.id !== docId)
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to delete document:', err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const draft = useMemo(() => fromForm(form, profile), [form, profile]);
 
@@ -128,8 +185,24 @@ export function Onboarding() {
             <div className="mt-12">
               {step === 0 && <StepAcademic form={form} errors={errors} onChange={update} />}
               {step === 1 && <StepTests form={form} errors={errors} onChange={update} />}
-              {step === 2 && <StepDocuments files={files} onChange={(k, f) => setFiles((prev) => ({ ...prev, [k]: f }))} />}
-              {step === 3 && <StepReview draft={draft} files={files} onEdit={setStep} />}
+              {step === 2 && (
+                <StepDocuments
+                  files={files}
+                  onChange={(k, f) => setFiles((prev) => ({ ...prev, [k]: f }))}
+                  existingDocs={existingDocs}
+                  onDeleteExisting={handleDeleteExistingDoc}
+                  deletingId={deletingId}
+                  loadingExisting={loadingExisting}
+                />
+              )}
+              {step === 3 && (
+                <StepReview
+                  draft={draft}
+                  files={files}
+                  existingDocs={existingDocs}
+                  onEdit={setStep}
+                />
+              )}
             </div>
           </motion.div>
         </AnimatePresence>

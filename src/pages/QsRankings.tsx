@@ -11,7 +11,6 @@ import {
   TableIcon,
   CheckCircle2Icon,
   RotateCcwIcon,
-  DollarSignIcon,
   BuildingIcon,
   ArrowLeftIcon,
   ExternalLinkIcon,
@@ -21,14 +20,13 @@ import {
   GraduationCapIcon,
   TrendingUpIcon,
   TrendingDownIcon,
-  MinusIcon,
-  AwardIcon,
   MicroscopeIcon,
 } from 'lucide-react';
 import { qsTop150Universities, QsUniversity } from '../data/qsUniversities';
 import { QsUniversityDrawer } from '../components/qs/QsUniversityDrawer';
 import { Logo } from '../components/ui/Logo';
 import { Button } from '../components/ui/Button';
+import { useProfile } from '../contexts/ProfileContext';
 
 type SortKey =
   | 'rank'
@@ -48,6 +46,7 @@ interface QsRankingsProps {
 }
 
 export function QsRankings({ standalone = false }: QsRankingsProps) {
+  const { currentUser } = useProfile();
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState('all');
   const [country, setCountry] = useState('all');
@@ -196,17 +195,23 @@ export function QsRankings({ standalone = false }: QsRankingsProps) {
               <div className="hidden h-5 w-px bg-line sm:block" />
               <Link
                 to="/"
-                className="hidden items-center gap-1.5 text-[13px] text-ink-2 transition-colors hover:text-ink sm:flex"
+                className="flex items-center gap-1.5 text-[13px] text-ink-2 transition-colors hover:text-ink"
               >
                 <ArrowLeftIcon className="h-3.5 w-3.5" /> Back to Home
               </Link>
             </div>
             <div className="flex items-center gap-3">
-              <Link to="/app" className="text-[14px] text-ink-2 transition-colors hover:text-ink">
-                Dashboard
-              </Link>
-              <Button to="/signup" size="sm">
-                Get your score
+              {currentUser ? (
+                <Link to="/app" className="text-[14px] text-ink-2 transition-colors hover:text-ink">
+                  Dashboard
+                </Link>
+              ) : (
+                <Link to="/login" className="text-[14px] text-ink-2 transition-colors hover:text-ink">
+                  Log in
+                </Link>
+              )}
+              <Button to={currentUser ? '/app' : '/signup'} size="sm">
+                {currentUser ? 'Go to App' : 'Get your score'}
               </Button>
             </div>
           </div>
@@ -237,7 +242,11 @@ export function QsRankings({ standalone = false }: QsRankingsProps) {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <Button to="/app/recommendations" variant="secondary" size="md">
+            <Button
+              to={currentUser ? '/app/recommendations' : '/signup'}
+              variant="secondary"
+              size="md"
+            >
               <SparklesIcon className="h-4 w-4 text-accent" />
               Simulate Profile Fit
             </Button>
@@ -1054,12 +1063,14 @@ export function QsRankings({ standalone = false }: QsRankingsProps) {
               </p>
             </div>
             <div className="flex shrink-0 gap-3">
-              <Button to="/onboarding" size="md">
+              <Button to={currentUser ? '/onboarding' : '/signup'} size="md">
                 Calculate My Score
               </Button>
-              <Button to="/app/recommendations" variant="secondary" size="md">
-                View Recommendations
-              </Button>
+              {currentUser && (
+                <Button to="/app/recommendations" variant="secondary" size="md">
+                  View Recommendations
+                </Button>
+              )}
             </div>
           </div>
         </div>

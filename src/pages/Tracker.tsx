@@ -9,7 +9,7 @@ import { useApplications } from '../contexts/ApplicationsContext';
 import { useProfile } from '../contexts/ProfileContext';
 import { daysUntil, formatDate } from '../utils/format';
 import { countTiers } from '../utils/scoring';
-import { DocKey, DocStatus, Stage } from '../types/application';
+import { Application, DocKey, DocStatus, Stage } from '../types/application';
 import { universities } from '../data/universities';
 import { Tier, RankedUniversity } from '../types/university';
 
@@ -64,7 +64,7 @@ export function Tracker() {
       const name =
         app.universityName ||
         staticUni?.name ||
-        app.universityId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        app.universityId.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
       const program = app.program || staticUni?.program || 'MS in Computer Science';
       const tier: Tier = app.tier || (staticUni ? 'target' : 'consider');
       const fitScore = app.fitScore ?? 75;
