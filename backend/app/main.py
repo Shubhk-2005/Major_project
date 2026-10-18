@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.v1.api import api_router
+from app.services.cache_service import cache
 import app.models  # Ensure all models are registered with Base.metadata
 
 
@@ -19,6 +20,13 @@ async def lifespan(app: FastAPI):
             print(f" MongoDB Atlas connection warning: {e}")
     else:
         Base.metadata.create_all(bind=engine)
+
+    cache_stat = cache.get_status()
+    print(f"⚡ Cache Subsystem: {cache_stat['mode']} [{cache_stat['active_backend']}]")
+
+    from app.services.chroma_service import chroma_service
+    chroma_count = chroma_service._collection.count() if chroma_service.is_active else 0
+    print(f"🧠 Vector Store: ChromaDB active with {chroma_count} indexed universities")
     yield
 
 
@@ -54,7 +62,16 @@ def root():
 
 @app.get("/health", tags=["Health"])
 def health_check():
-    return {"status": "healthy"}
+    from app.services.chroma_service import chroma_service
+    return {
+        "status": "healthy",
+        "cache": cache.get_status(),
+        "vector_store": {
+            "status": "active" if chroma_service.is_active else "inactive",
+            "indexed_universities": chroma_service._collection.count() if chroma_service.is_active else 0,
+            "engine": "ChromaDB (all-MiniLM-L6-v2 ONNX)"
+        }
+    }
 
 
 if __name__ == "__main__":

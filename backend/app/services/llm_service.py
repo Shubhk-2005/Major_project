@@ -136,7 +136,7 @@ def critique_sop(
     program_information: str = "Standard graduate degree requirements apply."
 ) -> Dict[str, Any]:
     """
-    Evaluate Statement of Purpose strictly adhering to the user's rubric prompt.
+    Evaluate Statement of Purpose strictly adhering to the 8-criteria rubric prompt.
     The LLM outputs criterion scores 0-10 without calculating the final score;
     this Python function calculates the final weighted composite score separately.
     """

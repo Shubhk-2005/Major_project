@@ -45,6 +45,16 @@ class Settings(BaseSettings):
         "http://localhost:4173",
     ]
 
+    # Redis Cache Configuration (Upstash / Redis Cloud / Local)
+    REDIS_URL: str = ""
+    REDIS_CACHE_ENABLED: bool = True
+    REDIS_CACHE_TTL_DEFAULT: int = 3600  # 1 hour
+    REDIS_CACHE_TTL_LLM: int = 86400     # 24 hours
+    RATE_LIMIT_ENABLED: bool = True
+
+    # ChromaDB Vector Store
+    CHROMA_PERSIST_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "chroma_data")
+
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
         env_file_encoding="utf-8",

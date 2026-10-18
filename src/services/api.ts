@@ -308,6 +308,33 @@ export const api = {
       throw new Error(err.detail || "Roadmap generation failed");
     }
     return await res.json();
+  },
+
+  // --- ChromaDB Semantic University Search ---
+  async semanticSearch(params: {
+    query: string;
+    topK?: number;
+    country?: string;
+    maxTier?: number;
+  }): Promise<{ query: string; total: number; results: any[] } | null> {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_BASE_URL}/search/semantic`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          query: params.query,
+          top_k: params.topK || 12,
+          country: params.country || undefined,
+          max_tier: params.maxTier || undefined
+        })
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (err) {
+      console.warn("ChromaDB semantic search offline:", err);
+      return null;
+    }
   }
 };
 

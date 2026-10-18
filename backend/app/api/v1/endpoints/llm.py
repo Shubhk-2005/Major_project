@@ -8,12 +8,17 @@ from app.api.deps import get_optional_current_user
 from app.models.document import Document
 from app.schemas.llm import SopCritiqueRequest, SopCritiqueResponse, RoadmapRequest, RoadmapResponse
 from app.services.llm_service import critique_sop, generate_admission_roadmap
-from app.db.repositories import MongoDocumentRepo
+from app.db.repositories import MongoDocumentRepo, MongoProfileRepo
+from app.services.cache_service import cache, rate_limiter
 
 router = APIRouter()
 
 
-@router.post("/critique-sop", response_model=SopCritiqueResponse)
+@router.post(
+    "/critique-sop",
+    response_model=SopCritiqueResponse,
+    dependencies=[Depends(rate_limiter(max_requests=10, window_seconds=60))]
+)
 def critique_statement_of_purpose(
     payload: SopCritiqueRequest,
     current_user: Optional[Any] = Depends(get_optional_current_user),
@@ -22,6 +27,7 @@ def critique_statement_of_purpose(
     """
     Perform deep LLM analysis on Statement of Purpose using Gemini.
     Can evaluate raw text directly or reference an uploaded document_id.
+    Cached in Redis to prevent redundant Gemini API consumption on identical essays.
     """
     text_to_analyze = payload.sop_text
     target_doc = None
@@ -51,13 +57,29 @@ def critique_statement_of_purpose(
         )
 
     sop_id_val = payload.sop_id or (f"SOP-{target_doc_id}" if target_doc_id else "SOP-1")
-    critique = critique_sop(
-        sop_text=text_to_analyze,
-        sop_id=sop_id_val,
-        university=payload.university or "Target University",
-        program=payload.program or "Master of Science in Computer Science",
-        program_information=payload.program_information or "Standard graduate degree requirements apply."
-    )
+    target_uni = payload.university or "Target University"
+    target_prog = payload.program or "Master of Science in Computer Science"
+
+    # Redis Cache Lookup
+    cache_signature = {
+        "text_summary": text_to_analyze[:250] + text_to_analyze[-250:] + str(len(text_to_analyze)),
+        "university": target_uni,
+        "program": target_prog
+    }
+    cache_key = cache.make_llm_cache_key("cache:llm:sop", cache_signature)
+    cached_critique = cache.get(cache_key)
+
+    if cached_critique:
+        critique = cached_critique
+    else:
+        critique = critique_sop(
+            sop_text=text_to_analyze,
+            sop_id=sop_id_val,
+            university=target_uni,
+            program=target_prog,
+            program_information=payload.program_information or "Standard graduate degree requirements apply."
+        )
+        cache.set(cache_key, critique, ttl=settings.REDIS_CACHE_TTL_LLM)
 
     # If linked to a document in DB, update feedback
     if target_doc_id:
@@ -87,7 +109,11 @@ def critique_statement_of_purpose(
     return critique
 
 
-@router.post("/generate-roadmap", response_model=RoadmapResponse)
+@router.post(
+    "/generate-roadmap",
+    response_model=RoadmapResponse,
+    dependencies=[Depends(rate_limiter(max_requests=15, window_seconds=60))]
+)
 def generate_roadmap(
     payload: RoadmapRequest,
     current_user: Optional[Any] = Depends(get_optional_current_user)
@@ -95,10 +121,17 @@ def generate_roadmap(
     """
     Synthesize profile metrics, SHAP bottlenecks, and target universities into
     a prioritized timeline roadmap powered by Gemini.
+    Cached in Redis to deliver instant roadmap rendering on repeat views.
     """
     profile_data = payload.model_dump()
+    cache_key = cache.make_llm_cache_key("cache:llm:roadmap", profile_data)
+    cached_roadmap = cache.get(cache_key)
+    if cached_roadmap:
+        return cached_roadmap
+
     roadmap = generate_admission_roadmap(
         profile_data=profile_data,
         target_unis=payload.target_universities
     )
+    cache.set(cache_key, roadmap, ttl=settings.REDIS_CACHE_TTL_LLM)
     return roadmap
