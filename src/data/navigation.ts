@@ -5,6 +5,7 @@ import {
   ListChecksIcon,
   SparklesIcon,
   TrophyIcon,
+  SearchIcon,
   LucideIcon
 } from 'lucide-react';
 
@@ -26,6 +27,13 @@ export const appNavigation: NavItem[] = [
     icon: SparklesIcon,
     isSpecial: true,
     badge: 'AI'
+  },
+  {
+    to: '/app/explorer',
+    label: 'AI Explorer',
+    icon: SearchIcon,
+    isSpecial: true,
+    badge: 'Chroma'
   },
   { to: '/app/qs-rankings', label: 'QS Top 150', icon: TrophyIcon },
   { to: '/app/tracker', label: 'Tracker', icon: ListChecksIcon },

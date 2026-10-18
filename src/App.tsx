@@ -27,7 +27,7 @@ export function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/app" element={<AppShell />}>
               <Route index element={<Dashboard />} />
-              <Route path="explorer" element={<Navigate to="/app/recommendations" replace />} />
+              <Route path="explorer" element={<Explorer />} />
               <Route path="recommendations" element={<Recommendations />} />
               <Route path="qs-rankings" element={<QsRankings />} />
               <Route path="tracker" element={<Tracker />} />
