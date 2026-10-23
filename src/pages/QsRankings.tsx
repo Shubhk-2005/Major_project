@@ -27,6 +27,7 @@ import { QsUniversityDrawer } from '../components/qs/QsUniversityDrawer';
 import { Logo } from '../components/ui/Logo';
 import { Button } from '../components/ui/Button';
 import { useProfile } from '../contexts/ProfileContext';
+import { LandingFooter } from '../components/landing/LandingFooter';
 
 type SortKey =
   | 'rank'
@@ -1102,6 +1103,8 @@ export function QsRankings({ standalone = false }: QsRankingsProps) {
 
       {/* University Details Drawer */}
       <QsUniversityDrawer item={selectedUni} onClose={() => setSelectedUni(null)} />
+
+      {standalone && <LandingFooter />}
     </div>
   );
 }

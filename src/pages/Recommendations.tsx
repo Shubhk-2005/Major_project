@@ -6,7 +6,7 @@ import { TierBadge } from '../components/ui/TierBadge';
 import { RecommendationCard } from '../components/recommendations/RecommendationCard';
 import { useProfile } from '../contexts/ProfileContext';
 import { getDynamicRoadmapItems } from '../utils/roadmapGenerator';
-import { applyLever, computeScore, countTiers, rankUniversities, tierRank } from '../utils/scoring';
+import { applyLever, computeScore, countTiers, rankUniversities, tierRank, getScoreExplanation } from '../utils/scoring';
 import { tierDefinition, tierLabel, tierOrder, tierSolid, tierText } from '../utils/tiers';
 import { Tier, RankedUniversity } from '../types/university';
 
@@ -19,6 +19,7 @@ const INITIAL_VISIBLE = 5;
 export function Recommendations() {
   const { profile, score, ranked } = useProfile();
   const counts = countTiers(ranked);
+  const scoreMeaning = getScoreExplanation(score);
   const [expanded, setExpanded] = useState<Record<Tier, boolean>>({ target: false, consider: false, reach: false });
   const [selectedUni, setSelectedUni] = useState<RankedUniversity | null>(null);
 
@@ -45,7 +46,18 @@ export function Recommendations() {
       <section className="mt-10 grid gap-8 rounded-lg border border-line bg-white p-6 md:p-8 lg:grid-cols-12">
         <div className="lg:col-span-5">
           <h2 className="font-display text-[20px] font-semibold tracking-[-0.03em]">Application strategy</h2>
-          <p className="mt-2 text-[14px] leading-relaxed text-ink-2">A balanced list for a score of {score}. Anchor with Targets, spend most effort on Considers, keep Reaches to the ones your roadmap can move.</p>
+          <div className="mt-2 flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold ${scoreMeaning.badgeClass}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${scoreMeaning.dotClass}`} />
+              Score {score}: {scoreMeaning.label}
+            </span>
+          </div>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-ink-2">
+            {scoreMeaning.oneLiner}
+          </p>
+          <p className="mt-2 text-[13px] leading-relaxed text-ink-3">
+            Anchor your list with Targets, spend most effort on Considers, and reserve Reaches for institutions where your profile roadmap levers create positive movement.
+          </p>
           <div className="mt-5 flex flex-wrap gap-6">
             {portfolio.map((p) =>
             <div key={p.tier}>

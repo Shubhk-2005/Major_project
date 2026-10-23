@@ -15,6 +15,7 @@ class UserProfile(Base):
     institution_tier = Column(Integer, default=3)
     target_program = Column(String(255), default="MS in Computer Science")
     intake = Column(String(100), default="Fall 2026")
+    target_countries = Column(String(500), default="all", nullable=True)
     
     # Quantitative factors
     gpa = Column(Float, default=8.4)

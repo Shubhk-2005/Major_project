@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union, List
 from pydantic import BaseModel, Field
 
 
@@ -9,6 +9,7 @@ class ProfileBase(BaseModel):
     institution_tier: int = Field(default=3, ge=1, le=3)
     target_program: str = "MS Computer Science"
     intake: str = "Fall 2027"
+    target_countries: Optional[Union[List[str], str]] = None
     gpa: float = Field(default=0.0, ge=0.0, le=10.0)
     gre: float = Field(default=0.0, ge=0.0, le=340.0)
     toefl: float = Field(default=0.0, ge=0.0, le=120.0)
@@ -32,6 +33,7 @@ class ProfileUpdate(BaseModel):
     institution_tier: Optional[int] = Field(default=None, ge=1, le=3)
     target_program: Optional[str] = None
     intake: Optional[str] = None
+    target_countries: Optional[Union[List[str], str]] = None
     gpa: Optional[float] = Field(default=None, ge=0.0, le=10.0)
     gre: Optional[float] = Field(default=None, ge=0.0, le=340.0)
     toefl: Optional[float] = Field(default=None, ge=0.0, le=120.0)

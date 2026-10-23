@@ -8,6 +8,7 @@ export interface Profile {
   institutionTier: InstitutionTier;
   targetProgram: string;
   intake: string;
+  targetCountries?: string[];
   gpa: number;
   gre: number;
   toefl: number;
@@ -27,6 +28,7 @@ export interface ProfileForm {
   institutionTier: string;
   targetProgram: string;
   intake: string;
+  targetCountries: string[];
   gpa: string;
   gre: string;
   toefl: string;

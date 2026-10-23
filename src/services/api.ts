@@ -46,6 +46,11 @@ export const api = {
         institutionTier: (data.institution_tier as 1 | 2 | 3) || 2,
         targetProgram: data.target_program || "MS Computer Science",
         intake: data.intake || "Fall 2027",
+        targetCountries: Array.isArray(data.target_countries)
+          ? data.target_countries
+          : typeof data.target_countries === "string" && data.target_countries
+          ? data.target_countries.split(",").map((s: string) => s.trim())
+          : ["all"],
         gpa: data.gpa !== undefined && data.gpa !== null ? Number(data.gpa) : 0,
         gre: data.gre !== undefined && data.gre !== null ? Number(data.gre) : 0,
         toefl: data.toefl !== undefined && data.toefl !== null ? Number(data.toefl) : 0,
@@ -75,6 +80,7 @@ export const api = {
       if (patch.institutionTier !== undefined) payload.institution_tier = patch.institutionTier;
       if (patch.targetProgram !== undefined) payload.target_program = patch.targetProgram;
       if (patch.intake !== undefined) payload.intake = patch.intake;
+      if (patch.targetCountries !== undefined) payload.target_countries = patch.targetCountries;
       if (patch.gpa !== undefined) payload.gpa = patch.gpa;
       if (patch.gre !== undefined) payload.gre = patch.gre;
       if (patch.toefl !== undefined) payload.toefl = patch.toefl;

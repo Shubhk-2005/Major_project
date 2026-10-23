@@ -3,14 +3,21 @@ import { NavLink } from 'react-router-dom';
 import { Logo } from '../ui/Logo';
 import { appNavigation } from '../../data/navigation';
 import { useProfile } from '../../contexts/ProfileContext';
+import { getScoreExplanation } from '../../utils/scoring';
 
 export function MobileNav() {
   const { score } = useProfile();
+  const scoreMeaning = getScoreExplanation(score);
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-canvas lg:hidden">
       <div className="flex h-14 items-center justify-between px-6">
         <Logo to="/app" />
-        <span className="font-mono text-[13px] tabular-nums text-accent">Score {score}</span>
+        <span
+          className="font-mono text-[13px] font-semibold tabular-nums text-accent rounded bg-accent/10 px-2.5 py-0.5 cursor-help"
+          title={`Score ${score}/100 (${scoreMeaning.label}): ${scoreMeaning.oneLiner}`}
+        >
+          Score {score} ({scoreMeaning.label})
+        </span>
       </div>
       <nav aria-label="Primary" className="flex gap-1.5 overflow-x-auto px-4 pb-2">
         {appNavigation.map((item) => (

@@ -3,10 +3,12 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Logo } from '../ui/Logo';
 import { appNavigation } from '../../data/navigation';
 import { useProfile } from '../../contexts/ProfileContext';
+import { getScoreExplanation } from '../../utils/scoring';
 
 export function Sidebar() {
   const { profile, score, logout } = useProfile();
   const navigate = useNavigate();
+  const scoreMeaning = getScoreExplanation(score);
 
   const handleLogout = async () => {
     await logout();
@@ -86,7 +88,11 @@ export function Sidebar() {
               {profile.targetProgram} · {profile.intake}
             </p>
           </div>
-          <span className="font-mono text-[13px] tabular-nums text-accent" aria-label={`Score ${score}`}>
+          <span
+            className="font-mono text-[13px] font-semibold tabular-nums text-accent rounded bg-accent/10 px-2 py-0.5 cursor-help"
+            aria-label={`Score ${score}: ${scoreMeaning.label}`}
+            title={`Score ${score}/100 (${scoreMeaning.label}): ${scoreMeaning.oneLiner}`}
+          >
             {score}
           </span>
         </div>

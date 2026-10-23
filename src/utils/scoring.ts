@@ -117,6 +117,134 @@ export function computeScore(p: Profile): number {
   return clamp(Math.round(BASELINE + sum), 1, 99);
 }
 
+export interface ScoreExplanation {
+  score: number;
+  label: string;
+  tier: 'foundation' | 'developing' | 'moderate' | 'competitive' | 'high' | 'elite';
+  oneLiner: string;
+  detail: string;
+  badgeClass: string;
+  dotClass: string;
+  borderClass: string;
+  bgClass: string;
+  textClass: string;
+  recommendationHint: string;
+}
+
+export function getScoreExplanation(score: number): ScoreExplanation {
+  const s = Math.round(score);
+
+  if (s <= 0) {
+    return {
+      score: 0,
+      label: 'Pending Onboarding',
+      tier: 'foundation',
+      oneLiner: 'Complete your academic profile and test scores to calculate your verified competitiveness score.',
+      detail: 'Once you enter your GPA, GRE/TOEFL, and experience, our ML model computes your profile competitiveness.',
+      badgeClass: 'bg-canvas text-ink-3 border border-line',
+      dotClass: 'bg-ink-3',
+      borderClass: 'border-line',
+      bgClass: 'bg-canvas/50',
+      textClass: 'text-ink-3',
+      recommendationHint: 'Start onboarding to discover your admission odds.'
+    };
+  }
+
+  if (s < 40) {
+    return {
+      score: s,
+      label: 'Early Foundation',
+      tier: 'foundation',
+      oneLiner: `A score of ${s}/100 indicates an early-stage profile needing foundational academic, test score, or project strengthening before targeting competitive master's programs.`,
+      detail: `Your score is ${62 - s} points below the typical MS CS admitted benchmark (62). Focus on GRE prep, research output, or GPA upward trends.`,
+      badgeClass: 'bg-rose-50 text-rose-700 border border-rose-200',
+      dotClass: 'bg-rose-500',
+      borderClass: 'border-rose-200',
+      bgClass: 'bg-rose-50/50',
+      textClass: 'text-rose-700',
+      recommendationHint: 'Prioritize programs with holistic review and no rigid cutoff bars.'
+    };
+  }
+
+  if (s <= 49) {
+    return {
+      score: s,
+      label: 'Developing Competitiveness',
+      tier: 'developing',
+      oneLiner: `A score of ${s}/100 indicates a developing profile below the 62 baseline — best suited for flexible mid-tier programs, while top-50 universities will require strategic score or research boosts.`,
+      detail: `At ${s}/100, you are ${62 - s} points from the median CS baseline (62). Programs with admit bars around 50–55 are within reach, while top programs are reaches.`,
+      badgeClass: 'bg-amber-50 text-amber-800 border border-amber-200',
+      dotClass: 'bg-amber-500',
+      borderClass: 'border-amber-200',
+      bgClass: 'bg-amber-50/50',
+      textClass: 'text-amber-800',
+      recommendationHint: 'Ideal for universities with admit bars of 50–56 (e.g. UT Dallas, ASU) and safe regional options.'
+    };
+  }
+
+  if (s <= 59) {
+    return {
+      score: s,
+      label: 'Moderate Competitiveness',
+      tier: 'moderate',
+      oneLiner: `A score of ${s}/100 represents moderate competitiveness approaching the 62 admitted baseline — well-positioned for consider & safe programs, with strong upside if GRE or SOP gaps are closed.`,
+      detail: `At ${s}/100, you are within ${62 - s} points of the median admitted applicant. Solid candidate for mid-tier programs, with high upside via targeted roadmap levers.`,
+      badgeClass: 'bg-amber-50 text-amber-800 border border-amber-200',
+      dotClass: 'bg-amber-500',
+      borderClass: 'border-amber-200',
+      bgClass: 'bg-amber-50/50',
+      textClass: 'text-amber-800',
+      recommendationHint: 'Competitively positioned for programs with admit bars of 54–62 (e.g. ASU, UT Dallas, Northeastern).'
+    };
+  }
+
+  if (s <= 69) {
+    return {
+      score: s,
+      label: 'Competitive (Admitted Benchmark)',
+      tier: 'competitive',
+      oneLiner: `A score of ${s}/100 matches or beats the 62 baseline of admitted graduate students — solidly competitive for established target programs with balanced admission odds.`,
+      detail: `At ${s}/100, you match or exceed the average admitted profile (62). Established mid-to-high tier universities are in your target zone.`,
+      badgeClass: 'bg-blue-50 text-blue-800 border border-blue-200',
+      dotClass: 'bg-blue-500',
+      borderClass: 'border-blue-200',
+      bgClass: 'bg-blue-50/50',
+      textClass: 'text-blue-800',
+      recommendationHint: 'Target programs with admit bars of 60–68 (e.g. UMass, USC, TU Delft, Edinburgh).'
+    };
+  }
+
+  if (s <= 84) {
+    return {
+      score: s,
+      label: 'Highly Competitive',
+      tier: 'high',
+      oneLiner: `A score of ${s}/100 significantly outpaces average applicant pools — highly competitive for top-30 programs with strong academic and profile credentials.`,
+      detail: `At ${s}/100, your profile is ${s - 62} points above benchmark. You are well-positioned for selective global programs and prestigious departments.`,
+      badgeClass: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+      dotClass: 'bg-emerald-500',
+      borderClass: 'border-emerald-200',
+      bgClass: 'bg-emerald-50/50',
+      textClass: 'text-emerald-800',
+      recommendationHint: 'Competitive for top-30 programs with admit bars of 70–80 (e.g. Georgia Tech, UCSD, Waterloo, Columbia).'
+    };
+  }
+
+  return {
+    score: s,
+    label: 'Elite Standing',
+    tier: 'elite',
+    oneLiner: `A score of ${s}/100 places you in the elite tier of applicants — exceptionally strong profile for top-10 global institutions and prestigious research fellowships.`,
+    detail: `At ${s}/100, your profile is in the top percentile of global CS applicants, meeting the admit bars of world-renowned institutions.`,
+    badgeClass: 'bg-purple-50 text-purple-800 border border-purple-200',
+    dotClass: 'bg-purple-500',
+    borderClass: 'border-purple-200',
+    bgClass: 'bg-purple-50/50',
+    textClass: 'text-purple-800',
+    recommendationHint: 'Ready for top-10 institutions with admit bars of 80+ (e.g. CMU, Stanford, ETH Zürich, UIUC).'
+  };
+}
+
 export function tierForFit(fit: number): Tier {
   if (fit >= 60) return 'target';
   if (fit >= 40) return 'consider';

@@ -25,7 +25,13 @@ export function StepReview({ draft, files, existingDocs, onEdit }: StepReviewPro
       ['Standing', draft.institutionTier === 1 ? 'Tier 1 (All IITs & IISc)' : draft.institutionTier === 2 ? 'Tier 2 (All NITs & IIITs)' : 'Tier 3 (Other Colleges / Fr. CRIT)'],
       ['Degree', draft.degree || 'Not specified'],
       ['GPA', `${draft.gpa} / 10`],
-      ['Target', `${draft.targetProgram}, ${draft.intake}`]
+      ['Target', `${draft.targetProgram}, ${draft.intake}`],
+      [
+        'Destinations',
+        draft.targetCountries && draft.targetCountries.length > 0 && !draft.targetCountries.includes('all')
+          ? draft.targetCountries.join(', ')
+          : 'Open to Anywhere (150 Top Universities)'
+      ]
     ]
 
   },

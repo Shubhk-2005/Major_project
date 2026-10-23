@@ -167,13 +167,28 @@ def compute_prediction_and_shap(profile_input: Dict[str, Any]) -> Dict[str, Any]
     overall_score = float(clamp(round(BASELINE + shap_sum), 1.0, 99.0))
     percentile = float(clamp(round(overall_score * 1.1 - 8.0), 1.0, 99.0))
 
+    s_int = int(round(overall_score))
+    if s_int < 40:
+        score_one_liner = f"A score of {s_int}/100 indicates an early-stage profile needing foundational academic, test score, or project strengthening before targeting competitive master's programs."
+    elif s_int <= 49:
+        score_one_liner = f"A score of {s_int}/100 indicates a developing profile below the 62 baseline — best suited for flexible mid-tier programs, while top-50 universities will require strategic score or research boosts."
+    elif s_int <= 59:
+        score_one_liner = f"A score of {s_int}/100 represents moderate competitiveness approaching the 62 admitted baseline — well-positioned for consider & safe programs, with strong upside if GRE or SOP gaps are closed."
+    elif s_int <= 69:
+        score_one_liner = f"A score of {s_int}/100 matches or beats the 62 baseline of admitted graduate students — solidly competitive for established target programs with balanced admission odds."
+    elif s_int <= 84:
+        score_one_liner = f"A score of {s_int}/100 significantly outpaces average applicant pools — highly competitive for top-30 programs with strong academic and profile credentials."
+    else:
+        score_one_liner = f"A score of {s_int}/100 places you in the elite tier of applicants — exceptionally strong profile for top-10 global institutions and prestigious research fellowships."
+
     return {
         "score": overall_score,
         "percentile": percentile,
         "factors": factors,
-        "summary": f"Profile evaluated with a composite competitiveness score of {overall_score}/100.",
+        "summary": score_one_liner,
         "raw_portfolio": portfolio
     }
+
 
 
 UNIVERSITY_METADATA: Dict[str, Dict[str, Any]] = {

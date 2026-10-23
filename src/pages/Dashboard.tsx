@@ -10,7 +10,7 @@ import { useApplications } from '../contexts/ApplicationsContext';
 import { useCountUp } from '../hooks/useCountUp';
 import { getDynamicRoadmapItems } from '../utils/roadmapGenerator';
 import { universities } from '../data/universities';
-import { BASELINE, countTiers, scoreDelta } from '../utils/scoring';
+import { BASELINE, countTiers, scoreDelta, getScoreExplanation } from '../utils/scoring';
 import { daysUntil, formatSigned } from '../utils/format';
 
 export function Dashboard() {
@@ -18,6 +18,7 @@ export function Dashboard() {
   const { applications } = useApplications();
   const display = useCountUp(score);
   const counts = countTiers(ranked);
+  const scoreMeaning = getScoreExplanation(isOnboarded ? score : 0);
 
   const adding = factors.filter((f) => f.contribution > 0).reduce((a, f) => a + f.contribution, 0);
   const costing = factors.filter((f) => f.contribution < 0).reduce((a, f) => a + f.contribution, 0);
@@ -93,6 +94,12 @@ export function Dashboard() {
             <span className="mt-2 font-mono text-[13px] text-ink-3">
               {isOnboarded ? 'out of 100' : 'Pending onboarding'}
             </span>
+            {isOnboarded && (
+              <span className={`mt-2.5 inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-[11.5px] font-semibold ${scoreMeaning.badgeClass}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${scoreMeaning.dotClass}`} />
+                {scoreMeaning.label}
+              </span>
+            )}
           </ScoreGauge>
 
           {/* User profile & headline placed below the score gauge */}
@@ -105,6 +112,29 @@ export function Dashboard() {
                 ? `Competitive for ${counts.target} programs, within reach of ${counts.consider} more.`
                 : 'Complete your profile to unlock personalized university admissions predictions.'}
             </h1>
+
+            {/* Dedicated One-Liner Score Meaning Card */}
+            {isOnboarded && (
+              <div className={`mt-5 rounded-xl border ${scoreMeaning.borderClass} ${scoreMeaning.bgClass} p-4 text-left shadow-2xs`}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2.5 w-2.5 rounded-full ${scoreMeaning.dotClass}`} />
+                    <h3 className="text-[12px] font-bold uppercase tracking-wider text-ink">
+                      What Score {score} Means
+                    </h3>
+                  </div>
+                  <span className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${scoreMeaning.badgeClass}`}>
+                    {scoreMeaning.label}
+                  </span>
+                </div>
+                <p className="mt-2 text-[13px] leading-relaxed font-medium text-ink">
+                  {scoreMeaning.oneLiner}
+                </p>
+                <p className="mt-2.5 pt-2 border-t border-line/50 text-[12px] text-ink-2">
+                  <strong className="text-ink font-semibold">Strategic Outlook:</strong> {scoreMeaning.recommendationHint}
+                </p>
+              </div>
+            )}
 
             {/* Compact Baseline / Adding / Costing Summary */}
             <div className="mt-5 rounded-xl border border-line bg-white/90 p-4 shadow-2xs">
@@ -136,6 +166,11 @@ export function Dashboard() {
                 </p>
                 <p className="mt-2 pt-2 border-t border-line/50 font-mono text-[11.5px] text-ink-3">
                   {BASELINE} + {formatSigned(adding)} {formatSigned(costing)} = <strong className="text-ink">{score} pts (Your Score)</strong>
+                  <span className="block mt-1 font-sans text-[11.5px] text-ink-2">
+                    {score >= BASELINE
+                      ? `Your score of ${score} is ${score - BASELINE} pts above the average admitted benchmark.`
+                      : `Your score of ${score} is ${BASELINE - score} pts below the 62 benchmark, placing you in the ${scoreMeaning.label.toLowerCase()} tier.`}
+                  </span>
                 </p>
               </div>
             </div>

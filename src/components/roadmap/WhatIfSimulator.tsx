@@ -6,7 +6,7 @@ import { TierBadge } from '../ui/TierBadge';
 import { ScoreGauge } from '../ui/ScoreGauge';
 import { useCountUp } from '../../hooks/useCountUp';
 import { Profile } from '../../types/profile';
-import { computeScore, countTiers, rankUniversities, tierRank } from '../../utils/scoring';
+import { computeScore, countTiers, rankUniversities, tierRank, getScoreExplanation } from '../../utils/scoring';
 import { tierLabel, tierOrder, tierSolid, tierText } from '../../utils/tiers';
 import { formatSigned } from '../../utils/format';
 
@@ -34,6 +34,7 @@ export function WhatIfSimulator({ base, sim, currentScore, onChange, onReset }: 
   const delta = computeScore(sim) - computeScore(base);
   const simScore = Math.max(1, Math.min(99, Math.round(effectiveBase + delta)));
   const display = useCountUp(simScore, 0.5);
+  const simExplanation = getScoreExplanation(simScore);
 
   const { baseCounts, simCounts, changes } = useMemo(() => {
     const b = rankUniversities(base);
@@ -125,6 +126,27 @@ export function WhatIfSimulator({ base, sim, currentScore, onChange, onReset }: 
               })}
             </dl>
           </div>
+        </div>
+
+        {/* Real-time One-Liner Score Meaning */}
+        <div className={`mt-6 rounded-xl border ${simExplanation.borderClass} ${simExplanation.bgClass} p-4 text-left shadow-2xs`}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className={`h-2.5 w-2.5 rounded-full ${simExplanation.dotClass}`} />
+              <h4 className="text-[12px] font-bold uppercase tracking-wider text-ink">
+                Simulated Score Meaning ({simScore}/100)
+              </h4>
+            </div>
+            <span className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${simExplanation.badgeClass}`}>
+              {simExplanation.label}
+            </span>
+          </div>
+          <p className="mt-1.5 text-[13px] leading-relaxed font-medium text-ink">
+            {simExplanation.oneLiner}
+          </p>
+          <p className="mt-2 pt-2 border-t border-line/50 text-[11.5px] text-ink-2">
+            <strong className="text-ink font-semibold">Strategic Impact:</strong> {simExplanation.recommendationHint}
+          </p>
         </div>
 
         <div className="mt-8 border-t border-line pt-6">
