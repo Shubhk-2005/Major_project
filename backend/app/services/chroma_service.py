@@ -50,8 +50,9 @@ class ChromaService:
 
     def _init_db(self):
         try:
-            os.makedirs(settings.CHROMA_PERSIST_DIR, exist_ok=True)
-            self._client = chromadb.PersistentClient(path=settings.CHROMA_PERSIST_DIR)
+            persist_dir = "/tmp/chroma_data" if os.environ.get("VERCEL") else settings.CHROMA_PERSIST_DIR
+            os.makedirs(persist_dir, exist_ok=True)
+            self._client = chromadb.PersistentClient(path=persist_dir)
             self._embedding_fn = DefaultEmbeddingFunction()
             self._collection = self._client.get_or_create_collection(
                 name="universities_semantic_catalog",
