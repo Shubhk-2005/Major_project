@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowDownIcon, ArrowUpIcon, SearchIcon, SlidersHorizontalIcon, SparklesIcon, Loader2Icon } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { SelectField } from '../components/ui/SelectField';
