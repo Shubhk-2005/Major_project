@@ -24,9 +24,7 @@ async def lifespan(app: FastAPI):
     cache_stat = cache.get_status()
     print(f"⚡ Cache Subsystem: {cache_stat['mode']} [{cache_stat['active_backend']}]")
 
-    from app.services.chroma_service import chroma_service
-    chroma_count = chroma_service._collection.count() if chroma_service.is_active else 0
-    print(f"🧠 Vector Store: ChromaDB active with {chroma_count} indexed universities")
+    print("🧠 Vector Store: ChromaDB configured for on-demand lazy initialization")
     yield
 
 
