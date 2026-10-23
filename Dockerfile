@@ -33,5 +33,5 @@ WORKDIR /app/backend
 
 EXPOSE 8080
 
-# Start Uvicorn on Cloud Run's dynamic $PORT (defaults to 8080)
-CMD exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1
+# Start Uvicorn on dynamic $PORT (defaults to 8080 or Render's $PORT)
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1"]
