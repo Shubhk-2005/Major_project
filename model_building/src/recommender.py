@@ -42,6 +42,9 @@ class PortfolioRecommender:
             raise FileNotFoundError(f"Model artifact not found at {model_path}. Run train.py first.")
 
         self.model = joblib.load(model_path)
+        # Ensure scikit-learn cross-version compatibility for final_estimator_ (LogisticRegression)
+        if hasattr(self.model, "final_estimator_") and not hasattr(self.model.final_estimator_, "multi_class"):
+            self.model.final_estimator_.multi_class = "auto"
 
         with open(catalog_path, "r") as f:
             self.catalog = json.load(f)
