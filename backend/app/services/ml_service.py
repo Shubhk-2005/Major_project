@@ -38,10 +38,9 @@ def get_ml_engine():
             _recommender = PortfolioRecommender(
                 model_path=MODEL_PATH,
                 catalog_path=CATALOG_PATH,
-                features_meta_path=FEATURES_META_PATH
+                features_meta_path=FEATURES_META_PATH,
+                explainer=_explainer
             )
-            # Reassign explainer with absolute paths
-            _recommender.explainer = _explainer
         finally:
             os.chdir(original_cwd)
 

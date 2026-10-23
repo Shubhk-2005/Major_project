@@ -13,10 +13,7 @@ router = APIRouter()
 
 
 @router.post("/score", response_model=PredictResponse, dependencies=[Depends(rate_limiter(max_requests=60, window_seconds=60))])
-def predict_score(
-    payload: PredictRequest,
-    current_user: Optional[User] = Depends(get_optional_current_user)
-):
+def predict_score(payload: PredictRequest):
     """
     Run XGBoost + SHAP feature attribution to score applicant competitiveness.
     Backed by Redis in-memory caching to eliminate duplicate matrix computations.
@@ -40,10 +37,7 @@ def predict_score(
 
 
 @router.post("/recommend", response_model=RecommendResponse, dependencies=[Depends(rate_limiter(max_requests=40, window_seconds=60))])
-def recommend_universities(
-    payload: PredictRequest,
-    current_user: Optional[User] = Depends(get_optional_current_user)
-):
+def recommend_universities(payload: PredictRequest):
     """
     Generate calibrated 3-3-3 portfolio (Target, Consider, Reach) with
     TreeSHAP bottleneck and strength diagnostics.

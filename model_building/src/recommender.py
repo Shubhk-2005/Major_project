@@ -35,7 +35,8 @@ class PortfolioRecommender:
         self,
         model_path: str = "model_building/models/xgboost_admissions_model.joblib",
         catalog_path: str = "model_building/data/processed/university_catalog.json",
-        features_meta_path: str = "model_building/models/model_features.json"
+        features_meta_path: str = "model_building/models/model_features.json",
+        explainer: Optional[AdmissionExplainer] = None
     ):
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model artifact not found at {model_path}. Run train.py first.")
@@ -49,7 +50,7 @@ class PortfolioRecommender:
             meta = json.load(f)
             self.feature_columns = meta["features"]
 
-        self.explainer = AdmissionExplainer()
+        self.explainer = explainer or AdmissionExplainer(features_meta_path=features_meta_path)
         self.uni_list = [
             u for u in self.catalog.values()
             if str(u.get("country", "")).strip().lower() not in ["india", "pakistan"]
