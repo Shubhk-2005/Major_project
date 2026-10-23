@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
 
-    # Database: 'sql' (PostgreSQL / SQLite) or 'mongodb'
-    DB_ENGINE: str = "sql"
+    # Database: 'mongodb' (MongoDB Atlas) or 'sql' (PostgreSQL / SQLite)
+    DB_ENGINE: str = "mongodb"
     DATABASE_URL: str = "sqlite:///./msadmit.db"
 
     # MongoDB Configuration

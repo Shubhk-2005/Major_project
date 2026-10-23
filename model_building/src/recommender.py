@@ -11,7 +11,7 @@ import joblib
 import ctypes
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 
 # Preload OpenMP library on macOS for XGBoost
 for lib_candidate in [
