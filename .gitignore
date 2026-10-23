@@ -60,9 +60,11 @@ htmlcov/
 *.sqlite
 *.sqlite3
 *.db
-backend/chroma_data/
-chroma_data/
-
+# Allow pre-indexed Chroma vector database to be included in git for production deployment
+!backend/chroma_data/
+!backend/chroma_data/**
+!backend/chroma_data/**/*.bin
+!backend/chroma_data/**/*.sqlite3
 
 # User Uploads & Media (Preserve folder structure via .gitkeep)
 backend/uploads/*
@@ -77,6 +79,7 @@ uploads/*
 *.pkl
 *.bin
 !model_building/models/.gitkeep
+!backend/chroma_data/**/*.bin
 
 # Jupyter Notebook Checkpoints
 .ipynb_checkpoints/

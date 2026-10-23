@@ -42,7 +42,7 @@ def search_status():
     """Diagnostic endpoint to inspect ChromaDB vector store health and document count."""
     if not chroma_service.is_active:
         return {"status": "inactive", "count": 0}
-    count = chroma_service._collection.count() if chroma_service._collection else 0
+    count = chroma_service.count
     return {
         "status": "active",
         "collection": "universities_semantic_catalog",

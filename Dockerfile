@@ -18,6 +18,9 @@ WORKDIR /app
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
+# Pre-download ONNX model during Docker build so runtime container NEVER downloads 79MB in 512MB RAM
+RUN python -c "from chromadb.utils.embedding_functions import DefaultEmbeddingFunction; DefaultEmbeddingFunction()"
+
 # Copy backend application
 COPY backend/ /app/backend/
 

@@ -67,7 +67,7 @@ def health_check():
         "cache": cache.get_status(),
         "vector_store": {
             "status": "active" if chroma_service.is_active else "inactive",
-            "indexed_universities": chroma_service._collection.count() if chroma_service.is_active else 0,
+            "indexed_universities": chroma_service.count,
             "engine": "ChromaDB (all-MiniLM-L6-v2 ONNX)"
         }
     }

@@ -46,14 +46,17 @@ class ChromaService:
         self._client = None
         self._collection = None
         self._embedding_fn = None
-        self._init_db()
 
-    def _init_db(self):
+    def _ensure_init(self) -> bool:
+        if self._collection is not None:
+            return True
         try:
             persist_dir = "/tmp/chroma_data" if os.environ.get("VERCEL") else settings.CHROMA_PERSIST_DIR
             os.makedirs(persist_dir, exist_ok=True)
-            self._client = chromadb.PersistentClient(path=persist_dir)
-            self._embedding_fn = DefaultEmbeddingFunction()
+            if self._client is None:
+                self._client = chromadb.PersistentClient(path=persist_dir)
+            if self._embedding_fn is None:
+                self._embedding_fn = DefaultEmbeddingFunction()
             self._collection = self._client.get_or_create_collection(
                 name="universities_semantic_catalog",
                 embedding_function=self._embedding_fn,
@@ -63,17 +66,40 @@ class ChromaService:
             logger.info(f" ChromaDB initialized with collection 'universities_semantic_catalog' ({count} indexed records).")
             if count == 0:
                 self.index_catalog()
+            return True
         except Exception as e:
             logger.error(f"❌ Failed to initialize ChromaDB: {e}")
+            return False
 
     @property
     def is_active(self) -> bool:
-        return self._collection is not None
+        if self._collection is not None:
+            return True
+        persist_dir = "/tmp/chroma_data" if os.environ.get("VERCEL") else settings.CHROMA_PERSIST_DIR
+        return os.path.exists(os.path.join(persist_dir, "chroma.sqlite3"))
+
+    @property
+    def count(self) -> int:
+        if self._collection is not None:
+            return self._collection.count()
+        persist_dir = "/tmp/chroma_data" if os.environ.get("VERCEL") else settings.CHROMA_PERSIST_DIR
+        sqlite_file = os.path.join(persist_dir, "chroma.sqlite3")
+        if os.path.exists(sqlite_file):
+            try:
+                if self._client is None:
+                    self._client = chromadb.PersistentClient(path=persist_dir)
+                col = self._client.get_collection(name="universities_semantic_catalog")
+                return col.count()
+            except Exception:
+                return 0
+        return 0
 
     def index_catalog(self) -> int:
         """
         Ingest university catalog into ChromaDB with rich semantic text descriptions.
         """
+        if not self._collection:
+            self._ensure_init()
         if not self._collection:
             logger.warning("ChromaDB collection not available for indexing.")
             return 0
@@ -165,7 +191,7 @@ class ChromaService:
         Perform cosine similarity vector search over university embeddings.
         Cached in Redis for blazing performance on repeated queries.
         """
-        if not self._collection or not query.strip():
+        if not query.strip():
             return []
 
         # Check Redis Cache
@@ -179,6 +205,12 @@ class ChromaService:
         cached_result = cache.get(cache_key)
         if cached_result:
             return cached_result
+
+        if not self._collection:
+            self._ensure_init()
+        if not self._collection:
+            logger.warning("ChromaDB collection unavailable for semantic search.")
+            return []
 
         where_clause = None
         if country_filter and country_filter != "All":

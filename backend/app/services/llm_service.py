@@ -2,6 +2,8 @@ import json
 import re
 import logging
 from typing import Dict, Any, List, Optional, Tuple
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 import google.generativeai as genai
 from app.core.config import settings
 
