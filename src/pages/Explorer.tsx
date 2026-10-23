@@ -103,6 +103,21 @@ export function Explorer() {
     }
   };
 
+  // Auto-search as user types when AI mode is active
+  useEffect(() => {
+    if (!isAiMode) return;
+    const q = query.trim();
+    if (!q || q.length < 2) {
+      setAiResults([]);
+      setLastAiQuery('');
+      return;
+    }
+    const timer = setTimeout(() => {
+      handleAiSearch(q);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [query, isAiMode, country]);
+
   const budgetActive = maxTuition < MAX_TUITION || maxLiving < MAX_LIVING;
 
   return (
@@ -380,15 +395,38 @@ export function Explorer() {
               })}
             </tbody>
           </table>
-          {rows.length === 0 &&
-          <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+          {rows.length === 0 && (
+            <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
               <p className="text-[15px] font-medium">No programs match these filters</p>
-              <p className="text-[14px] text-ink-3">Try widening the budget or removing a filter.</p>
-              <Button variant="secondary" size="sm" onClick={reset}>
-                Reset filters
-              </Button>
+              {query.trim() ? (
+                <>
+                  <p className="text-[14px] text-ink-3 max-w-md">
+                    Looking for a specific research topic, lab, or specialization like "{query}"? 
+                    Use ChromaDB AI Semantic Search to discover matched universities across 140+ institutions.
+                  </p>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setIsAiMode(true);
+                      handleAiSearch(query);
+                    }}
+                    className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    <SparklesIcon className="h-3.5 w-3.5 text-amber-300 mr-1.5" />
+                    Search "{query}" with AI Semantic Engine
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-[14px] text-ink-3">Try widening the budget or removing a filter.</p>
+                  <Button variant="secondary" size="sm" onClick={reset}>
+                    Reset filters
+                  </Button>
+                </>
+              )}
             </div>
-          }
+          )}
         </div>
       )}
 
