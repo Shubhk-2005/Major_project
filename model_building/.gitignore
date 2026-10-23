@@ -15,10 +15,12 @@ __pycache__/
 .ipynb_checkpoints/
 */.ipynb_checkpoints/*
 
-# Model files & weights (exclude large binaries from git tracking)
-models/*.joblib
+# Model files & weights
 models/*.pkl
 models/*.bin
+!models/feature_scaler.joblib
+!models/raw_xgb_tree_model.joblib
+!models/xgboost_admissions_model.joblib
 !models/.gitkeep
 
 # Data (track folder structure, avoid committing huge raw datasets)
