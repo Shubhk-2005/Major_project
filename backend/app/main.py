@@ -47,7 +47,7 @@ app.add_middleware(
 )
 
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -61,6 +61,16 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
+@app.get("/docs", include_in_schema=False)
+def docs_redirect():
+    return RedirectResponse(url=f"{settings.API_V1_STR}/docs")
+
+
+@app.get("/redoc", include_in_schema=False)
+def redoc_redirect():
+    return RedirectResponse(url=f"{settings.API_V1_STR}/redoc")
+
+
 @app.get("/", tags=["Health"])
 def root():
     return {
@@ -71,6 +81,7 @@ def root():
 
 
 @app.get("/health", tags=["Health"])
+@app.get(f"{settings.API_V1_STR}/health", tags=["Health"])
 def health_check():
     from app.services.chroma_service import chroma_service
     return {

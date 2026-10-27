@@ -1,6 +1,6 @@
 import os
 import json
-from typing import List, Optional, Any
+from typing import Dict, List, Optional, Any
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -56,7 +56,9 @@ async def upload_document(
     parsed_feedback = None
     doc_status = "uploaded"
 
-    if is_resume and extracted_text and len(extracted_text.strip()) > 30:
+    # Guard: skip LLM parsing if text extraction itself failed (error placeholder string)
+    pdf_extraction_failed = extracted_text and extracted_text.strip().startswith("[PDF text extraction note:")
+    if is_resume and extracted_text and len(extracted_text.strip()) > 30 and not pdf_extraction_failed:
         parsed_resume = parse_resume(extracted_text)
         parsed_feedback = json.dumps(parsed_resume)
         doc_status = "parsed"

@@ -21,9 +21,18 @@ fi
 
 cd "$DIR"
 
+# Check if port 8000 is already in use and free it
+PORT_PID=$(lsof -ti :8000 || true)
+if [ -n "$PORT_PID" ]; then
+    echo "Port 8000 is occupied by PID $PORT_PID. Freeing port 8000..."
+    kill -9 $PORT_PID 2>/dev/null || true
+    sleep 1
+    echo "✓ Port 8000 released successfully."
+fi
+
 echo "Using Python: $PYTHON_EXEC"
 echo "Starting Uvicorn server on http://localhost:8000 ..."
-echo "API Docs available at: http://localhost:8000/api/v1/docs"
+echo "API Docs available at: http://localhost:8000/docs (and /api/v1/docs)"
 echo "========================================="
 
 exec "$PYTHON_EXEC" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

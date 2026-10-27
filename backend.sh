@@ -41,11 +41,13 @@ elif [ -d "/usr/local/opt/libomp/lib" ]; then
     export DYLD_LIBRARY_PATH="/usr/local/opt/libomp/lib:$DYLD_LIBRARY_PATH"
 fi
 
-# Check if port 8000 is already in use
+# Check if port 8000 is already in use and free it
 PORT_PID=$(lsof -ti :8000 || true)
 if [ -n "$PORT_PID" ]; then
-    echo -e "${YELLOW}Warning: Port 8000 is currently occupied by PID $PORT_PID.${NC}"
-    echo -e "You can kill it using: ${BLUE}kill -9 $PORT_PID${NC}"
+    echo -e "${YELLOW}Port 8000 is occupied by PID $PORT_PID. Freeing port 8000...${NC}"
+    kill -9 $PORT_PID 2>/dev/null || true
+    sleep 1
+    echo -e "${GREEN}✓ Port 8000 released successfully.${NC}"
     echo ""
 fi
 

@@ -31,7 +31,7 @@ if settings.GEMINI_API_KEY:
 
 def _get_gemini_model():
     """Retrieve active Gemini generative model instance."""
-    for model_name in ["gemini-3.5-flash-lite", "gemma-4-26b-a4b-it", "gemini-3.8-flash"]:
+    for model_name in ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemma-4-26b-a4b-it", "gemini-3.8-flash"]:
         try:
             return genai.GenerativeModel(model_name)
         except Exception:
@@ -41,7 +41,7 @@ def _get_gemini_model():
 
 def _generate_with_gemini(prompt: str, timeout: int = 25) -> Optional[str]:
     """Attempt generation with available LLM models in priority order."""
-    for model_name in ["gemini-3.5-flash-lite", "gemma-4-26b-a4b-it", "gemini-3.8-flash"]:
+    for model_name in ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemma-4-26b-a4b-it", "gemini-3.8-flash"]:
         try:
             model = genai.GenerativeModel(model_name)
             response = model.generate_content(prompt, request_options={"timeout": timeout, "retry": None})
@@ -326,19 +326,13 @@ SOP TEXT:
 """
 
     try:
-        model = _get_gemini_model()
-        response = model.generate_content(prompt, request_options={"timeout": 6})
-        raw_text = response.text.strip()
+        raw_text = _generate_with_gemini(prompt, timeout=35)
+        if not raw_text:
+            return _fallback_sop_rubric(sop_id, university, program, sop_text)
 
-        # Clean markdown codeblocks if returned
-        if raw_text.startswith("```json"):
-            raw_text = raw_text[7:]
-        if raw_text.startswith("```"):
-            raw_text = raw_text[3:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-
-        parsed = json.loads(raw_text.strip())
+        parsed = _extract_json_object(raw_text)
+        if not parsed or not isinstance(parsed, dict):
+            return _fallback_sop_rubric(sop_id, university, program, sop_text)
 
         # Clean compliance or null string values if returned as string "N/A"
         criteria = parsed.get("criteria", {})
@@ -518,7 +512,7 @@ Return ONLY a valid JSON object:
 
     # Attempt fast REST call with short timeout (3.5s)
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={settings.GEMINI_API_KEY}"
         payload = json.dumps({
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.2, "maxOutputTokens": 600}
