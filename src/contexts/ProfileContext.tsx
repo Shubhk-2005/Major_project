@@ -170,9 +170,15 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       score: isOnboarded ? (liveScore ?? computeScore(profile)) : 0,
       factors: isOnboarded ? (liveFactors ?? computeShap(profile)) : [],
       ranked: isOnboarded
-        ? (liveRanked ?? rankUniversities(profile)).filter(
-            (r) => !['india', 'pakistan'].includes((r.university.country || '').trim().toLowerCase())
-          )
+        ? (() => {
+            const base = (liveRanked ?? rankUniversities(profile)).filter(
+              (r) => !['india', 'pakistan'].includes((r.university.country || '').trim().toLowerCase())
+            );
+            const targets = profile.targetCountries;
+            if (!targets || targets.length === 0 || targets.includes('all')) return base;
+            const targetSet = new Set(targets.map((c) => c.trim().toLowerCase()));
+            return base.filter((r) => targetSet.has((r.university.country || '').trim().toLowerCase()));
+          })()
         : [],
       sopDecisions,
       setSopDecisions,

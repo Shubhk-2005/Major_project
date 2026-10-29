@@ -243,15 +243,17 @@ export function QsRankings({ standalone = false }: QsRankingsProps) {
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-3">
-            <Button
-              to="/app/explorer"
-              variant="primary"
-              size="md"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
-            >
-              <SparklesIcon className="h-4 w-4 text-amber-300" />
-              AI Semantic Search (ChromaDB)
-            </Button>
+            {currentUser && (
+              <Button
+                to="/app/explorer"
+                variant="primary"
+                size="md"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+              >
+                <SparklesIcon className="h-4 w-4 text-amber-300" />
+                AI Semantic Search (ChromaDB)
+              </Button>
+            )}
             <Button
               to={currentUser ? '/app/recommendations' : '/signup'}
               variant="secondary"
@@ -313,20 +315,22 @@ export function QsRankings({ standalone = false }: QsRankingsProps) {
 
         {/* Search & Filters */}
         <div className="mt-8 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3.5 py-2">
-            <div className="flex items-center gap-2">
-              <SparklesIcon className="h-4 w-4 text-indigo-600 shrink-0" />
-              <span className="text-[12.5px] text-indigo-950 font-medium">
-                Want to search by research labs, specialized faculty, or assistantships?
-              </span>
+          {currentUser && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3.5 py-2">
+              <div className="flex items-center gap-2">
+                <SparklesIcon className="h-4 w-4 text-indigo-600 shrink-0" />
+                <span className="text-[12.5px] text-indigo-950 font-medium">
+                  Want to search by research labs, specialized faculty, or assistantships?
+                </span>
+              </div>
+              <Link
+                to="/app/explorer"
+                className="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-700 hover:text-indigo-900 transition-colors"
+              >
+                Open ChromaDB Vector Search &rarr;
+              </Link>
             </div>
-            <Link
-              to="/app/explorer"
-              className="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-700 hover:text-indigo-900 transition-colors"
-            >
-              Open ChromaDB Vector Search &rarr;
-            </Link>
-          </div>
+          )}
 
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             {/* Search Input */}

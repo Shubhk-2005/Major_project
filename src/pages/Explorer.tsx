@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDownIcon, ArrowUpIcon, SearchIcon, SlidersHorizontalIcon, SparklesIcon, Loader2Icon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, SearchIcon, SlidersHorizontalIcon, SparklesIcon, Loader2Icon, AlertCircleIcon } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { SelectField } from '../components/ui/SelectField';
 import { RangeField } from '../components/ui/RangeField';
@@ -42,6 +42,7 @@ export function Explorer() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResults, setAiResults] = useState<any[]>([]);
   const [lastAiQuery, setLastAiQuery] = useState('');
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const countries = useMemo(() => Array.from(new Set(universities.map((u) => u.country))).sort(), []);
   const courses = useMemo(() => Array.from(new Set(universities.map((u) => u.course))).sort(), []);
@@ -86,22 +87,33 @@ export function Explorer() {
     </th>;
 
 
-  const handleAiSearch = async (overrideQuery?: string) => {
+  const handleAiSearch = useCallback(async (overrideQuery?: string) => {
     const q = (overrideQuery !== undefined ? overrideQuery : query).trim();
     if (!q) return;
     setAiLoading(true);
+    setAiError(null);
     setLastAiQuery(q);
-    const resp = await api.semanticSearch({
-      query: q,
-      country: country !== 'all' ? country : undefined
-    });
-    setAiLoading(false);
-    if (resp && resp.results) {
-      setAiResults(resp.results);
-    } else {
+    try {
+      const resp = await api.semanticSearch({
+        query: q,
+        country: country !== 'all' ? country : undefined
+      });
+      if (resp && resp.results) {
+        setAiResults(resp.results);
+        if (resp.results.length === 0) {
+          setAiError('No universities matched your query. Try different keywords or broaden your search.');
+        }
+      } else {
+        setAiResults([]);
+        setAiError('Semantic search is currently unavailable. Please try again in a moment.');
+      }
+    } catch (err) {
       setAiResults([]);
+      setAiError('Failed to connect to the semantic search engine. Please check your connection and try again.');
+    } finally {
+      setAiLoading(false);
     }
-  };
+  }, [query, country]);
 
   // Auto-search as user types when AI mode is active
   useEffect(() => {
@@ -110,13 +122,14 @@ export function Explorer() {
     if (!q || q.length < 2) {
       setAiResults([]);
       setLastAiQuery('');
+      setAiError(null);
       return;
     }
     const timer = setTimeout(() => {
       handleAiSearch(q);
     }, 400);
     return () => clearTimeout(timer);
-  }, [query, isAiMode, country]);
+  }, [query, isAiMode, country, handleAiSearch]);
 
   const budgetActive = maxTuition < MAX_TUITION || maxLiving < MAX_LIVING;
 
@@ -215,9 +228,11 @@ export function Explorer() {
             onChange={(newCountry) => {
               setCountry(newCountry);
               if (isAiMode && query.trim()) {
+                setAiError(null);
                 api.semanticSearch({ query, country: newCountry !== 'all' ? newCountry : undefined }).then((res) => {
                   if (res?.results) setAiResults(res.results);
-                });
+                  else setAiError('Semantic search is currently unavailable.');
+                }).catch(() => setAiError('Failed to connect to the semantic search engine.'));
               }
             }}
             options={[{ value: 'all', label: 'All countries' }, ...countries.map((c) => ({ value: c, label: c }))]}
@@ -268,6 +283,10 @@ export function Explorer() {
             {aiLoading ? (
               <span className="flex items-center gap-1.5 text-indigo-600">
                 <Loader2Icon className="h-3.5 w-3.5 animate-spin" /> Querying vector embeddings in ChromaDB...
+              </span>
+            ) : aiError && !lastAiQuery ? (
+              <span className="flex items-center gap-1.5 text-rose-600">
+                <AlertCircleIcon className="h-3.5 w-3.5" /> {aiError}
               </span>
             ) : lastAiQuery ? (
               <span>Showing ChromaDB semantic matches for: <strong className="text-ink">"{lastAiQuery}"</strong></span>
@@ -334,11 +353,28 @@ export function Explorer() {
           </table>
           {aiResults.length === 0 && !aiLoading && (
             <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
-              <SparklesIcon className="h-8 w-8 text-indigo-400" />
-              <p className="text-[15px] font-medium text-ink">Ready for AI Semantic Search</p>
-              <p className="text-[14px] text-ink-3 max-w-md">
-                Type any natural language query above or click a suggested prompt chip to discover universities matching your goals.
-              </p>
+              {aiError ? (
+                <>
+                  <AlertCircleIcon className="h-8 w-8 text-rose-400" />
+                  <p className="text-[15px] font-medium text-ink">Search Unavailable</p>
+                  <p className="text-[14px] text-ink-3 max-w-md">{aiError}</p>
+                  <button
+                    type="button"
+                    onClick={() => handleAiSearch(lastAiQuery || query)}
+                    className="mt-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-[13px] font-medium text-indigo-700 hover:bg-indigo-100"
+                  >
+                    Retry Search
+                  </button>
+                </>
+              ) : (
+                <>
+                  <SparklesIcon className="h-8 w-8 text-indigo-400" />
+                  <p className="text-[15px] font-medium text-ink">Ready for AI Semantic Search</p>
+                  <p className="text-[14px] text-ink-3 max-w-md">
+                    Type any natural language query above or click a suggested prompt chip to discover universities matching your goals.
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>

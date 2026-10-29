@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRightIcon } from 'lucide-react';
+import { ArrowRightIcon, GlobeIcon, XIcon } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { TierBadge } from '../components/ui/TierBadge';
 import { RecommendationCard } from '../components/recommendations/RecommendationCard';
@@ -18,21 +18,35 @@ const INITIAL_VISIBLE = 5;
 
 export function Recommendations() {
   const { profile, score, ranked } = useProfile();
-  const counts = countTiers(ranked);
   const scoreMeaning = getScoreExplanation(score);
   const [expanded, setExpanded] = useState<Record<Tier, boolean>>({ target: false, consider: false, reach: false });
   const [selectedUni, setSelectedUni] = useState<RankedUniversity | null>(null);
+  // Local per-country drill-down (on top of already-profile-filtered ranked list)
+  const [countryOverride, setCountryOverride] = useState<string>('');
+
+  // Countries the user selected during onboarding (already applied in ProfileContext)
+  const activeTargets = profile.targetCountries && !profile.targetCountries.includes('all')
+    ? profile.targetCountries
+    : null;
+
+  // Apply optional single-country drill-down
+  const filteredRanked = useMemo(() => {
+    if (!countryOverride) return ranked;
+    return ranked.filter((r) => r.university.country === countryOverride);
+  }, [ranked, countryOverride]);
+
+  const counts = countTiers(filteredRanked);
 
   const unlock = useMemo(() => {
-    const dynItems = getDynamicRoadmapItems(profile, ranked);
+    const dynItems = getDynamicRoadmapItems(profile, filteredRanked);
     const high = dynItems.filter((r) => r.priority === 'high' && r.lever);
     const boosted = high.reduce((p, r) => applyLever(p, r.lever ?? {}), profile);
     const boostedRanked = rankUniversities(boosted);
-    const moves = boostedRanked.
-    map((b) => ({ b, cur: ranked.find((r) => r.university.id === b.university.id) })).
-    filter(({ b, cur }) => cur && tierRank(b.fit.tier) < tierRank(cur.fit.tier));
+    const moves = boostedRanked
+      .map((b) => ({ b, cur: filteredRanked.find((r) => r.university.id === b.university.id) }))
+      .filter(({ b, cur }) => cur && tierRank(b.fit.tier) < tierRank(cur.fit.tier));
     return { count: high.length, score: computeScore(boosted), moves };
-  }, [profile, ranked]);
+  }, [profile, filteredRanked]);
 
   const portfolio = tierOrder.map((t) => ({ tier: t, n: Math.min(PORTFOLIO[t], counts[t]) }));
 
@@ -40,8 +54,43 @@ export function Recommendations() {
     <div>
       <PageHeader
         title="Recommendations"
-        description="Every program is tiered by fit, and every tier shows the factors behind it. Fit is computed from your score, each program’s admit bar, and how you compare to its admitted medians." />
-      
+        description="Every program is tiered by fit, and every tier shows the factors behind it. Fit is computed from your score, each program's admit bar, and how you compare to its admitted medians." />
+
+      {/* Active country filter banner */}
+      {activeTargets && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-2.5">
+          <GlobeIcon className="h-4 w-4 text-blue-600 shrink-0" />
+          <span className="text-[13px] text-blue-900 font-medium">Filtered to your target countries:</span>
+          <div className="flex flex-wrap gap-1.5">
+            {activeTargets.map((c) => (
+              <span
+                key={c}
+                role="button"
+                tabIndex={0}
+                className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-semibold transition-colors ${
+                  countryOverride === c
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-blue-200 bg-white text-blue-800 hover:bg-blue-100'
+                }`}
+                onClick={() => setCountryOverride(countryOverride === c ? '' : c)}
+                onKeyDown={(e) => { if (e.key === 'Enter') setCountryOverride(countryOverride === c ? '' : c); }}
+              >
+                {c}
+                {countryOverride === c && <XIcon className="h-3 w-3" />}
+              </span>
+            ))}
+          </div>
+          {countryOverride && (
+            <button
+              type="button"
+              onClick={() => setCountryOverride('')}
+              className="ml-auto text-[12px] text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              Show all target countries
+            </button>
+          )}
+        </div>
+      )}
 
       <section className="mt-10 grid gap-8 rounded-lg border border-line bg-white p-6 md:p-8 lg:grid-cols-12">
         <div className="lg:col-span-5">
@@ -96,7 +145,7 @@ export function Recommendations() {
 
       <div className="mt-12 grid gap-10 lg:grid-cols-3 lg:gap-6">
         {tierOrder.map((tier) => {
-          const items = ranked
+          const items = filteredRanked
             .filter((r) => r.fit.tier === tier)
             .sort((a, b) => b.fit.fit - a.fit.fit);
           const visible = expanded[tier] ? items : items.slice(0, INITIAL_VISIBLE);

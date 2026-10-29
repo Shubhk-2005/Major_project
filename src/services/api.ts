@@ -146,7 +146,8 @@ export const api = {
         publications: p.publications,
         institution_tier: p.institutionTier,
         undergrad: p.undergrad,
-        intake_term: p.intake.includes("Spring") ? "Spring" : "Fall"
+        intake_term: p.intake.includes("Spring") ? "Spring" : "Fall",
+        target_countries: p.targetCountries && !p.targetCountries.includes('all') ? p.targetCountries : undefined
       };
 
       const res = await fetch(`${API_BASE_URL}/predict/recommend`, {

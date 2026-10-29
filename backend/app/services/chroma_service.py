@@ -73,10 +73,10 @@ class ChromaService:
 
     @property
     def is_active(self) -> bool:
+        # Try to initialize if not already done
         if self._collection is not None:
             return True
-        persist_dir = "/tmp/chroma_data" if os.environ.get("VERCEL") else settings.CHROMA_PERSIST_DIR
-        return os.path.exists(os.path.join(persist_dir, "chroma.sqlite3"))
+        return self._ensure_init()
 
     @property
     def count(self) -> int:
